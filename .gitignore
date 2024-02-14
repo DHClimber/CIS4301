@@ -122,7 +122,11 @@ celerybeat.pid
 # Environments
 .env
 .venv
+<<<<<<< HEAD
 .credentials.txt
+=======
+.credentials
+>>>>>>> 20a22639168ab49b8b71462c93aa6ab744960892
 env/
 venv/
 ENV/
