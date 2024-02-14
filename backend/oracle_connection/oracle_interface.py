@@ -36,7 +36,7 @@ def sql_request(sql_command):
                     temp = str(index)
                     response_dict[temp] = str(line) 
                     index += 1    
-                    print(response_dict[temp])            
+                    #print(response_dict[temp]) -- FIXME         
                 return response_dict
 
     except Exception as e:
