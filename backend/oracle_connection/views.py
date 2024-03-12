@@ -35,4 +35,23 @@ class API_Connection(APIView):
             message["db_response"] = str(db_return)
             return Response(message, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=400)
+    
+class Dashboard(APIView):
+
+    def get(self, request):
+        crashes_by_year = sql_request("""SELECT EXTRACT(YEAR FROM CRASH_DATE) "year", 
+                                COUNT(*) "numCrashes" FROM 
+                                Crashes GROUP BY EXTRACT(YEAR FROM CRASH_DATE) 
+                                ORDER BY 1""")
+        crashes_by_month = sql_request("""SELECT EXTRACT(MONTH FROM CRASH_DATE) "month", 
+                                COUNT(*) "numCrashes" FROM 
+                                Crashes GROUP BY EXTRACT(MONTH FROM CRASH_DATE) 
+                                ORDER BY 1""")
+
+        response_data = {
+            "data1" : crashes_by_year.values(),
+            "data2" : crashes_by_month.values()
+        }
+
+        return Response(response_data)
   
