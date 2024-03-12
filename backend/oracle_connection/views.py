@@ -39,10 +39,19 @@ class API_Connection(APIView):
 class Dashboard(APIView):
 
     def get(self, request):
-        db_return = sql_request("""SELECT EXTRACT(YEAR FROM CRASH_DATE) "year", 
+        crashes_by_year = sql_request("""SELECT EXTRACT(YEAR FROM CRASH_DATE) "year", 
                                 COUNT(*) "numCrashes" FROM 
                                 Crashes GROUP BY EXTRACT(YEAR FROM CRASH_DATE) 
                                 ORDER BY 1""")
+        crashes_by_month = sql_request("""SELECT EXTRACT(MONTH FROM CRASH_DATE) "month", 
+                                COUNT(*) "numCrashes" FROM 
+                                Crashes GROUP BY EXTRACT(MONTH FROM CRASH_DATE) 
+                                ORDER BY 1""")
 
-        return Response(db_return)
+        response_data = {
+            "data1" : crashes_by_year.values(),
+            "data2" : crashes_by_month.values()
+        }
+
+        return Response(response_data)
   
