@@ -1,4 +1,5 @@
 
+from django.http import HttpResponseNotFound
 from rest_framework.response import Response
 from rest_framework import status
 from oracle_connection.serializers import ConnectionSerializer
@@ -35,4 +36,39 @@ class API_Connection(APIView):
             message["db_response"] = str(db_return)
             return Response(message, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=400)
+    
+class Dashboard(APIView):
+
+    def get(self, request):
+
+        graphNum = request.GET.get("tile", None)
+
+        if graphNum != None and graphNum not in ["1", "2", "3", "4", "5"]:
+            return HttpResponseNotFound("Graph Number Not Found")
+        
+        crashes_by_year = sql_request("""SELECT EXTRACT(YEAR FROM CRASH_DATE) "year", 
+                                COUNT(*) "numCrashes" FROM 
+                                Crashes GROUP BY EXTRACT(YEAR FROM CRASH_DATE) 
+                                ORDER BY 1""")
+        crashes_by_month = sql_request("""SELECT EXTRACT(MONTH FROM CRASH_DATE) "month", 
+                                COUNT(*) "numCrashes" FROM 
+                                Crashes GROUP BY EXTRACT(MONTH FROM CRASH_DATE) 
+                                ORDER BY 1""")
+        
+        queryMap = {
+            "1" : crashes_by_year.values(),
+            "2" : crashes_by_month.values()
+        }
+
+        if graphNum == None:
+            response_data = {
+                "data1" : crashes_by_year.values(),
+                "data2" : crashes_by_month.values()
+            }
+
+        else:
+            response_data = queryMap[graphNum]
+
+
+        return Response(response_data)
   

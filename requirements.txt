@@ -2,9 +2,15 @@ asgiref==3.7.2
 cffi==1.16.0
 cryptography==42.0.2
 Django==5.0.2
+django-cors-headers==4.3.1
 djangorestframework==3.14.0
+numpy==1.26.4
 oracledb==2.0.1
+pandas==2.2.1
 pycparser==2.21
+python-dateutil==2.9.0.post0
 python-dotenv==1.0.1
 pytz==2024.1
+six==1.16.0
 sqlparse==0.4.4
+tzdata==2024.1
