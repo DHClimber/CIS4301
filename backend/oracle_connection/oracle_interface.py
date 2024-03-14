@@ -34,7 +34,7 @@ def sql_request(sql_command):
                 response_dict = {}
                 for line in db_response:
                     temp = str(index)
-                    response_dict[temp] = str(line) 
+                    response_dict[temp] = line
                     index += 1    
                     #print(response_dict[temp]) -- FIXME         
                 return response_dict
