@@ -35,11 +35,11 @@ export default async function Page({params}: {params: {slug: string}}) {
                 }}
                 >
                 <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="name" />
-                <YAxis />
+                <XAxis dataKey={Object.keys(dashboardTile.data[0])[0]} label={dashboardTile.xAxisLabel}/>
+                <YAxis label={dashboardTile.yAxisLabel} />
                 <Tooltip />
                 <Legend />
-                <Bar dataKey="numCrashes" fill="#8884d8" activeBar={<Rectangle fill="pink" stroke="blue" />} />
+                <Bar dataKey={Object.keys(dashboardTile.data[0])[1]} fill="#8884d8" activeBar={<Rectangle fill="pink" stroke="blue" />} />
             </BarChart>
         </ResponsiveContainer>
     </Box>

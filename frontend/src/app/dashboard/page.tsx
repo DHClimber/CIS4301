@@ -18,7 +18,7 @@ export default async function Dashboard() {
               <Typography variant='h6'>{tile.title}</Typography>            
               <ResponsiveContainer width={250} height={150}>
                 <BarChart width={250} height={150} data={tile.data}>
-                  <Bar dataKey="numCrashes" fill="#8884d8" />
+                  <Bar dataKey={Object.keys(tile.data[0])[1]} fill="#8884d8" />
                 </BarChart>
               </ResponsiveContainer>
               <Link href={`/dashboard/${tile.id}`}>

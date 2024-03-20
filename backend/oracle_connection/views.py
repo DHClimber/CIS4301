@@ -46,18 +46,18 @@ class Dashboard(APIView):
         if graphNum != None and graphNum not in ["1", "2", "3", "4", "5"]:
             return HttpResponseNotFound("Graph Number Not Found")
         
-        crashes_by_year = sql_request("""SELECT EXTRACT(YEAR FROM CRASH_DATE) "name", 
+        crashes_by_year = sql_request("""SELECT EXTRACT(YEAR FROM CRASH_DATE) "year", 
                                 COUNT(*) "numCrashes" FROM 
                                 Crashes GROUP BY EXTRACT(YEAR FROM CRASH_DATE) 
                                 ORDER BY 1""")
         
-        crashes_by_month = sql_request("""SELECT EXTRACT(MONTH FROM CRASH_DATE) "name", 
-                                COUNT(*) "numCrashes" FROM 
+        crashes_by_month = sql_request("""SELECT EXTRACT(MONTH FROM CRASH_DATE) "month", 
+                                COUNT(*) "tuna" FROM 
                                 Crashes GROUP BY EXTRACT(MONTH FROM CRASH_DATE) 
                                 ORDER BY 1""")
         
-        crashes_by_day = sql_request("""SELECT CRASH_DAY_OF_WEEK "name", 
-                                COUNT(*) "numCrashes" FROM 
+        crashes_by_day = sql_request("""SELECT CRASH_DAY_OF_WEEK "day", 
+                                COUNT(*) "Number of Fatalities" FROM 
                                 Crashes GROUP BY CRASH_DAY_OF_WEEK 
                                 ORDER BY 1""")
         
@@ -65,16 +65,22 @@ class Dashboard(APIView):
             "1" : {
                 "id" : "1",
                 "title" : "Crashes per Year",
+                "xAxisLabel" : "year",
+                "yAxisLabel" : "numCrashes",
                 "data" : crashes_by_year.values()
                 },
             "2" : {
                 "id" : "2",
                 "title" : "Crashes per Month",
+                "xAxisLabel" : "month",
+                "yAxisLabel" : "tuna",
                 "data" : crashes_by_month.values()
                 },
             "3" : {
                 "id" : "3",
                 "title" : "Crashes per Day",
+                "xAxisLabel" : "day",
+                "yAxisLabel" : "Number of Fatalities",
                 "data" : crashes_by_day.values()
             }
         }
