@@ -5,7 +5,10 @@ import { testTiles } from '@/app/test-data';
  * Returns array of all DashboardTiles
  */
 export async function getAllDashboardTiles(): Promise<DashboardTile[] | null> {
-    // return djangoQueries.fetch('/dashboardTiles') => returns array of all dashboard tiles
+    
+    const data = await fetch("http://127.0.0.1:8000/oracle_connection/dashboard/");
+    const testTiles = await data.json();
+
     return testTiles;
 }
 
@@ -14,9 +17,12 @@ export async function getAllDashboardTiles(): Promise<DashboardTile[] | null> {
  * @param id of DashboardTile to fetch
  * @returns Dashboard Tile object with specified id
  */
-export function getDashboardTileById(id: string): DashboardTile | undefined {
-    // return djangoQueries.get(/dashboardTile/[id]) => returns dashboard tile object with that id
-    return testTiles.find((tile) => tile.id === id);
+export async function getDashboardTileById(id: string): Promise<DashboardTile | undefined> {
+    
+    const data = await fetch(`http://127.0.0.1:8000/oracle_connection/dashboard/?tile=${id}`);
+    const testTile = await data.json();
+
+    return testTile;
 }
 
 

@@ -56,8 +56,16 @@ class Dashboard(APIView):
                                 ORDER BY 1""")
         
         queryMap = {
-            "1" : crashes_by_year.values(),
-            "2" : crashes_by_month.values()
+            "1" : {
+                "id" : "1",
+                "title" : "Crashes per Year",
+                "data" : crashes_by_year.values()
+                },
+            "2" : {
+                "id" : "2",
+                "title" : "Crashes per Month",
+                "data" : crashes_by_month.values()
+                }
         }
 
         if graphNum == None:
