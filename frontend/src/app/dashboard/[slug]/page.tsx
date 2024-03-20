@@ -9,7 +9,8 @@ import { Bar, BarChart, CartesianGrid, Legend, Rectangle, ResponsiveContainer, T
  * The individual tile view page.
  */
 export default async function Page({params}: {params: {slug: string}}) {
-  const dashboardTile = getDashboardTileById(params.slug)
+
+  const dashboardTile = await getDashboardTileById(params.slug)
 
   if (!dashboardTile) {
     notFound()
@@ -34,12 +35,11 @@ export default async function Page({params}: {params: {slug: string}}) {
                 }}
                 >
                 <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="name" />
-                <YAxis />
+                <XAxis dataKey={Object.keys(dashboardTile.data[0])[0]} label={dashboardTile.xAxisLabel}/>
+                <YAxis label={dashboardTile.yAxisLabel} />
                 <Tooltip />
                 <Legend />
-                <Bar dataKey="pv" fill="#8884d8" activeBar={<Rectangle fill="pink" stroke="blue" />} />
-                <Bar dataKey="uv" fill="#82ca9d" activeBar={<Rectangle fill="gold" stroke="purple" />} />
+                <Bar dataKey={Object.keys(dashboardTile.data[0])[1]} fill="#8884d8" activeBar={<Rectangle fill="pink" stroke="blue" />} />
             </BarChart>
         </ResponsiveContainer>
     </Box>
