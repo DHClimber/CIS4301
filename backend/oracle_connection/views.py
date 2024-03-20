@@ -46,17 +46,17 @@ class Dashboard(APIView):
         if graphNum != None and graphNum not in ["1", "2", "3", "4", "5"]:
             return HttpResponseNotFound("Graph Number Not Found")
         
-        crashes_by_year = sql_request("""SELECT EXTRACT(YEAR FROM CRASH_DATE) "year", 
+        crashes_by_year = sql_request("""SELECT EXTRACT(YEAR FROM CRASH_DATE) "name", 
                                 COUNT(*) "numCrashes" FROM 
                                 Crashes GROUP BY EXTRACT(YEAR FROM CRASH_DATE) 
                                 ORDER BY 1""")
         
-        crashes_by_month = sql_request("""SELECT EXTRACT(MONTH FROM CRASH_DATE) "month", 
+        crashes_by_month = sql_request("""SELECT EXTRACT(MONTH FROM CRASH_DATE) "name", 
                                 COUNT(*) "numCrashes" FROM 
                                 Crashes GROUP BY EXTRACT(MONTH FROM CRASH_DATE) 
                                 ORDER BY 1""")
         
-        crashes_by_day = sql_request("""SELECT CRASH_DAY_OF_WEEK "day", 
+        crashes_by_day = sql_request("""SELECT CRASH_DAY_OF_WEEK "name", 
                                 COUNT(*) "numCrashes" FROM 
                                 Crashes GROUP BY CRASH_DAY_OF_WEEK 
                                 ORDER BY 1""")
