@@ -50,9 +50,15 @@ class Dashboard(APIView):
                                 COUNT(*) "numCrashes" FROM 
                                 Crashes GROUP BY EXTRACT(YEAR FROM CRASH_DATE) 
                                 ORDER BY 1""")
+        
         crashes_by_month = sql_request("""SELECT EXTRACT(MONTH FROM CRASH_DATE) "month", 
                                 COUNT(*) "numCrashes" FROM 
                                 Crashes GROUP BY EXTRACT(MONTH FROM CRASH_DATE) 
+                                ORDER BY 1""")
+        
+        crashes_by_day = sql_request("""SELECT CRASH_DAY_OF_WEEK "day", 
+                                COUNT(*) "numCrashes" FROM 
+                                Crashes GROUP BY CRASH_DAY_OF_WEEK 
                                 ORDER BY 1""")
         
         queryMap = {
@@ -65,14 +71,16 @@ class Dashboard(APIView):
                 "id" : "2",
                 "title" : "Crashes per Month",
                 "data" : crashes_by_month.values()
-                }
+                },
+            "3" : {
+                "id" : "3",
+                "title" : "Crashes per Day",
+                "data" : crashes_by_day.values()
+            }
         }
 
         if graphNum == None:
-            response_data = {
-                "data1" : crashes_by_year.values(),
-                "data2" : crashes_by_month.values()
-            }
+            response_data =[queryMap["1"], queryMap["2"], queryMap["3"]]
 
         else:
             response_data = queryMap[graphNum]
