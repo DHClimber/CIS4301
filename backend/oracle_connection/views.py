@@ -42,24 +42,35 @@ class Dashboard(APIView):
     def get(self, request):
 
         graphNum = request.GET.get("tile", None)
+        min_date = request.GET.get("minDate", "")
+        max_date = request.GET.get("maxDate", "")
 
         if graphNum != None and graphNum not in ["1", "2", "3", "4", "5"]:
             return HttpResponseNotFound("Graph Number Not Found")
         
+        if min_date == "":
+            min_date = "2000-01-01" # don't hardcode
+        
+        if max_date == "":
+            max_date = "2025-01-01" # don't hardcode
+        
         crashes_by_year = sql_request("""SELECT EXTRACT(YEAR FROM CRASH_DATE) "year", 
                                 COUNT(*) "numCrashes" FROM 
-                                Crashes GROUP BY EXTRACT(YEAR FROM CRASH_DATE) 
-                                ORDER BY 1""")
+                                Crashes WHERE CRASH_DATE BETWEEN TO_DATE(:1, 'YYYY-MM-DD') 
+                                AND TO_DATE(:2, 'YYYY-MM-DD') GROUP BY EXTRACT(YEAR FROM CRASH_DATE) 
+                                ORDER BY 1""", [min_date, max_date])
         
         crashes_by_month = sql_request("""SELECT EXTRACT(MONTH FROM CRASH_DATE) "month", 
                                 COUNT(*) "tuna" FROM 
-                                Crashes GROUP BY EXTRACT(MONTH FROM CRASH_DATE) 
-                                ORDER BY 1""")
+                                Crashes WHERE CRASH_DATE BETWEEN TO_DATE(:1, 'YYYY-MM-DD') 
+                                AND TO_DATE(:2, 'YYYY-MM-DD') GROUP BY EXTRACT(MONTH FROM CRASH_DATE) 
+                                ORDER BY 1""", [min_date, max_date])
         
         crashes_by_day = sql_request("""SELECT CRASH_DAY_OF_WEEK "day", 
                                 COUNT(*) "Number of Fatalities" FROM 
-                                Crashes GROUP BY CRASH_DAY_OF_WEEK 
-                                ORDER BY 1""")
+                                Crashes WHERE CRASH_DATE BETWEEN TO_DATE(:1, 'YYYY-MM-DD') 
+                                AND TO_DATE(:2, 'YYYY-MM-DD') GROUP BY CRASH_DAY_OF_WEEK 
+                                ORDER BY 1""", [min_date, max_date])
         
         queryMap = {
             "1" : {

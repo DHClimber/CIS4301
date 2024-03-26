@@ -4,9 +4,9 @@ import { testTiles } from '@/app/test-data';
 /**
  * Returns array of all DashboardTiles
  */
-export async function getAllDashboardTiles(): Promise<DashboardTile[] | null> {
+export async function getAllDashboardTiles(minDate: string, maxDate: string): Promise<DashboardTile[] | null> {
     
-    const data = await fetch("http://127.0.0.1:8000/oracle_connection/dashboard/");
+    const data = await fetch(`http://127.0.0.1:8000/oracle_connection/dashboard/?minDate=${minDate}&maxDate=${maxDate}`);
     const testTiles = await data.json();
 
     return testTiles;
