@@ -6,7 +6,7 @@ import { Bar, BarChart, ResponsiveContainer } from 'recharts';
 
 export default async function Dashboard() {
 
-  const testTiles = await getAllDashboardTiles();
+  const testTiles = await getAllDashboardTiles("2015-12-25", "2017-12-25");
 
   return (
     <Stack spacing={1}>
