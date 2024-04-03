@@ -173,3 +173,19 @@ class Default_values(APIView):
         response_data["primary cause"] = Default.primary_cause()
             
         return Response(response_data)
+    
+#Query total tuples
+class Schneider(APIView):
+
+    def get(self, request):
+        
+        sql = """
+            select count(*) AS "TOTAL TUPLE COUNT" FROM (SELECT RD_NO FROM CRASHES
+            UNION ALL
+            SELECT RD_NO FROM PEOPLE
+            UNION ALL
+            SELECT RD_NO FROM VEHICLES)
+            """
+        response = sql_request(sql,None)
+
+        return Response(response)
