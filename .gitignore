@@ -165,6 +165,7 @@ cython_debug/
 #.idea/
 
 #backend
+.DS_Store
 backend/oracle_connection/.DS_Store
 
 # Next.js frontent
