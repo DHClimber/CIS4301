@@ -25,6 +25,14 @@ export async function getDashboardTileById(id: string): Promise<DashboardTile | 
     return testTile;
 }
 
+export async function getTupleCount(): Promise<number | null> {
+
+    const res = await fetch('http://127.0.0.1:8000/oracle_connection/schneider');
+    const tupleCount = await res.json();
+
+    return tupleCount.totalCount;
+}
+
 
 
 //---- in django
