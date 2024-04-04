@@ -25,28 +25,10 @@ export async function getDashboardTileById(id: string): Promise<DashboardTile | 
     return testTile;
 }
 
-export async function getTupleCount(): Promise<number | null> {
+export async function getTupleCount(): Promise<number> {
 
     const res = await fetch('http://127.0.0.1:8000/oracle_connection/schneider');
     const tupleCount = await res.json();
 
     return tupleCount.totalCount;
 }
-
-
-
-//---- in django
-// const queryMap = {
-//     [id: string]: string;
-// }
-
-// {"1": "Select * from Crashes", "2": "Select * from People"}
-
-// let query = queryMap[req.query.tile];
-
-// let minDate = '1-2-2024'; // constraint
-
-// query = query + ` where Crash_date > ${minDate}`;
-
-// // call oracle sql qith "query" variable
-
