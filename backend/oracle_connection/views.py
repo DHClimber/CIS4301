@@ -274,7 +274,7 @@ class Schneider(APIView):
     def get(self, request):
         
         sql = """
-            select count(*) AS "TOTAL TUPLE COUNT" FROM (SELECT RD_NO FROM CRASHES
+            select count(*) AS "totalCount" FROM (SELECT RD_NO FROM CRASHES
             UNION ALL
             SELECT RD_NO FROM PEOPLE
             UNION ALL
@@ -282,4 +282,4 @@ class Schneider(APIView):
             """
         response = sql_request(sql,None)
 
-        return Response(response)
+        return Response(response.values())
