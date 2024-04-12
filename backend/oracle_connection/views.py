@@ -260,7 +260,7 @@ class Dashboard_single(APIView):
         sql_response = sql_request(complex_sql[0], binder)
         
         queryMap = {
-                "id" : "1",
+                "id" : view,
                 "title" : f"{complex_sql[1]}",
                 "xAxisLabel" : "year",
                 "yAxisLabel" : f"{complex_sql[2]}",
