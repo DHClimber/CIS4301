@@ -1,8 +1,8 @@
 #List of our complex queries that will be called by views.py
 
 #1 Top Vehicle Types by Injury Rate in Crashes Involving Young Drivers
-def Query_1():
-	sql = """
+def Query_1(age_filter, sex_filter):
+	sql = f"""
     SELECT Year,
         Vehicle_Type,
         Injured_to_Crash
@@ -23,7 +23,8 @@ def Query_1():
             INNER JOIN Vehicles V ON P.VEHICLE_ID = V.VEHICLE_ID
             WHERE C.CRASH_DATE BETWEEN TO_DATE(:1, 'MM-DD-YYYY')
                     AND TO_DATE(:2, 'MM-DD-YYYY')
-                AND P.AGE < 25
+	    AND weather_condition IN (:3, :4, :5, :6, :7, :8, :9, :10, :11) 
+	    AND {age_filter} AND {sex_filter}
             GROUP BY TO_CHAR(C.CRASH_DATE, 'YYYY'),
                 V.VEHICLE_TYPE,
                 C.RD_NO
@@ -34,11 +35,11 @@ def Query_1():
             Injured_to_Crash DESC
         )
     WHERE Rank <= 3"""
-	return [sql, "Top Vehicle Types by Injury Rate in Crashes Involving Young Drivers","Injury Rate"]
+	return [sql, "Top Vehicle Types by Injury to Crash Ratio","Injury Rate"]
 
 #2 Top Contributory Causes of Traffic Crashes by Year
-def Query_2():
-	sql = """
+def Query_2(age_filter, sex_filter):
+	sql = f"""
         SELECT Year,
         PRIM_CONTRIBUTORY_CAUSE,
         Total_Crashes
@@ -50,7 +51,10 @@ def Query_2():
                 PARTITION BY TO_CHAR(CRASH_DATE, 'YYYY') ORDER BY COUNT(*) DESC
                 ) AS Rank
         FROM Crashes
-        WHERE EXTRACT(YEAR FROM CRASH_DATE) <> '2014'
+        WHERE C.CRASH_DATE BETWEEN TO_DATE(:1, 'MM-DD-YYYY')
+                    AND TO_DATE(:2, 'MM-DD-YYYY')
+	AND weather_condition IN (:3, :4, :5, :6, :7, :8, :9, :10, :11) 
+ 	AND {age_filter} AND {sex_filter}
         GROUP BY TO_CHAR(CRASH_DATE, 'YYYY'),
             PRIM_CONTRIBUTORY_CAUSE
         )
@@ -58,11 +62,11 @@ def Query_2():
     ORDER BY Year,
         Rank
     """
-	return [sql, "Top Contributory Causes of Traffic Crashes by Year","Total Crashes"]
+	return [sql, "Top Contributory Causes of Traffic Crashes by Year","Crash Count"]
 
 #3 Annual Crash Counts on Top 5 Streets and Totals
-def Query_3():
-	sql = """SELECT *
+def Query_3(age_filter, sex_filter):
+	sql = f"""SELECT *
     FROM (
         SELECT EXTRACT(YEAR FROM CRASH_DATE) AS year,
             Street_Name,
@@ -74,6 +78,10 @@ def Query_3():
                 GROUP BY street_name
                 ORDER BY COUNT(*) DESC FETCH FIRST 5 ROWS ONLY
                 )
+	AND C.CRASH_DATE BETWEEN TO_DATE(:1, 'MM-DD-YYYY')
+                    AND TO_DATE(:2, 'MM-DD-YYYY')
+	AND weather_condition IN (:3, :4, :5, :6, :7, :8, :9, :10, :11) 
+ 	AND {age_filter} AND {sex_filter}
         GROUP BY EXTRACT(YEAR FROM CRASH_DATE),
             Street_Name
         
@@ -89,22 +97,30 @@ def Query_3():
                 GROUP BY street_name
                 ORDER BY COUNT(*) DESC FETCH FIRST 5 ROWS ONLY
                 )
+	WHERE C.CRASH_DATE BETWEEN TO_DATE(:1, 'MM-DD-YYYY')
+                    AND TO_DATE(:2, 'MM-DD-YYYY')
+	AND weather_condition IN (:3, :4, :5, :6, :7, :8, :9, :10, :11) 
+ 	AND {age_filter} AND {sex_filter}
         GROUP BY EXTRACT(YEAR FROM CRASH_DATE)
         )
     ORDER BY YEAR ASC,
         3 ASC
 	"""
-	return [sql, "Annual Crash Counts on Top 5 Streets and Totals","Crash Count"]
+	return [sql, "Annual Crash Counts on Top 5 (Overall) Streets and Totals","Crash Count"]
 
 #4 Yearly Maximum Injuries by Vehicle Make
-def Query_4():
-	sql = """
+def Query_4(age_filter, sex_filter):
+	sql = f"""
     WITH TEMP1
     AS (
         SELECT V.MAKE,
             Extract(YEAR FROM C.CRASH_DATE) AS YEAR,
             MAX(C.INJURIES_TOTAL) AS INJ
         FROM CRASHES C
+	WHERE C.CRASH_DATE BETWEEN TO_DATE(:1, 'MM-DD-YYYY')
+                    AND TO_DATE(:2, 'MM-DD-YYYY')
+	AND weather_condition IN (:3, :4, :5, :6, :7, :8, :9, :10, :11) 
+ 	AND {age_filter} AND {sex_filter}
         JOIN VEHICLES V ON C.RD_NO = V.RD_NO
         GROUP BY Extract(YEAR FROM C.CRASH_DATE),
             V.MAKE
@@ -137,8 +153,8 @@ def Query_4():
 	return [sql, "Yearly Maximum Injuries by Vehicle Make", "Number of Injuries"]
 	
 #5 Comparative Analysis of Contributing Factors to Traffic Crashes by Year
-def Query_5():
-	sql = """
+def Query_5(age_filter, sex_filter):
+	sql = f"""
     WITH Temp1
     AS (
         --Cell Phone
@@ -149,6 +165,10 @@ def Query_5():
                 'CELL PHONE USE OTHER THAN TEXTING',
                 'TEXTING'
                 )
+	AND C.CRASH_DATE BETWEEN TO_DATE(:1, 'MM-DD-YYYY')
+                    AND TO_DATE(:2, 'MM-DD-YYYY')
+	AND weather_condition IN (:3, :4, :5, :6, :7, :8, :9, :10, :11) 
+ 	AND {age_filter} AND {sex_filter}
         GROUP BY EXTRACT(YEAR FROM CRASH_DATE)
         ORDER BY 1 ASC
         ),
@@ -159,7 +179,12 @@ def Query_5():
             ROUND(AVG(POSTED_LIMIT)) AS DUI_CAUSE
         FROM Crashes
         WHERE PRIM_CONTRIBUTORY_CAUSE IN ('UNDER THE INFLUENCE OF ALCOHOL/DRUGS (USE WHEN ARREST IS EFFECTED)')
+	AND C.CRASH_DATE BETWEEN TO_DATE(:1, 'MM-DD-YYYY')
+                    AND TO_DATE(:2, 'MM-DD-YYYY')
+	AND weather_condition IN (:3, :4, :5, :6, :7, :8, :9, :10, :11) 
+ 	AND {age_filter} AND {sex_filter}
         GROUP BY EXTRACT(YEAR FROM CRASH_DATE)
+	
         ),
     Temp3
     AS (
@@ -168,6 +193,10 @@ def Query_5():
             ROUND(AVG(POSTED_LIMIT)) AS EXCEEDED_SPEED_LIMIT
         FROM Crashes
         WHERE PRIM_CONTRIBUTORY_CAUSE IN ('EXCEEDING AUTHORIZED SPEED LIMIT')
+	AND C.CRASH_DATE BETWEEN TO_DATE(:1, 'MM-DD-YYYY')
+                    AND TO_DATE(:2, 'MM-DD-YYYY')
+	AND weather_condition IN (:3, :4, :5, :6, :7, :8, :9, :10, :11) 
+ 	AND {age_filter} AND {sex_filter}
         GROUP BY EXTRACT(YEAR FROM CRASH_DATE)
         ),
     Temp4
@@ -177,6 +206,10 @@ def Query_5():
             ROUND(AVG(POSTED_LIMIT)) AS NON_FATAL
         FROM Crashes
         WHERE INJURIES_FATAL = 0
+	AND C.CRASH_DATE BETWEEN TO_DATE(:1, 'MM-DD-YYYY')
+                    AND TO_DATE(:2, 'MM-DD-YYYY')
+	AND weather_condition IN (:3, :4, :5, :6, :7, :8, :9, :10, :11) 
+ 	AND {age_filter} AND {sex_filter}
         GROUP BY EXTRACT(YEAR FROM CRASH_DATE)
         ),
     Temp5
@@ -186,6 +219,10 @@ def Query_5():
             ROUND(AVG(POSTED_LIMIT)) AS FATAL
         FROM Crashes
         WHERE INJURIES_FATAL <> 0
+	AND C.CRASH_DATE BETWEEN TO_DATE(:1, 'MM-DD-YYYY')
+                    AND TO_DATE(:2, 'MM-DD-YYYY')
+	AND weather_condition IN (:3, :4, :5, :6, :7, :8, :9, :10, :11) 
+ 	AND {age_filter} AND {sex_filter}
         GROUP BY EXTRACT(YEAR FROM CRASH_DATE)
         )
     SELECT Temp1.YEAR,
@@ -205,4 +242,4 @@ def Query_5():
         AND Temp4.YEAR = Temp5.YEAR
     ORDER BY Temp1.YEAR ASC
     """
-	return [sql, "Comparative Analysis of Contributing Factors to Traffic Crashes by Year", "Totals"]
+	return [sql, "Comparative Analysis of Avg Speed Limit by Crash Type", "Speed Limit"]
