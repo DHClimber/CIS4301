@@ -192,35 +192,56 @@ class Dashboard_single(APIView):
     def post(self, request):
         
         view = request.data['view']
+
+        if view == None:
+            return Response({"error": 'please select 1-5 for key "view"'})
+
+        sex = request.data['sex']
+        min_age = request.data['min_age']
+        max_age = request.data['max_age']
+        weather = request.data['weather']
+
         CRASH_DATE_MIN = request.data['CRASH_DATE_MIN']
         if CRASH_DATE_MIN == "": CRASH_DATE_MIN = '01-01-2014'  
 
         CRASH_DATE_MAX = request.data['CRASH_DATE_MAX']
         if CRASH_DATE_MAX == "" : CRASH_DATE_MAX = '12-31-2019' 
 
+        if weather == None: 
+            weather = ['FOG/SMOKE/HAZE', 'SEVERE CROSS WIND GATE', 
+                    'SNOW', 'OTHER', 'CLEAR', 'RAIN', 'CLOUDY/OVERCAST',
+                    'UNKNOWN', 'SLEET/HAIL']
+
         binder = []
 
-        if view == None:
-            return Response({"error": 'please select 1-5 for key "view"'})
+        binder.append(CRASH_DATE_MIN, CRASH_DATE_MAX)
+        binder += weather
+        binder += list(None for i in range(9 - len(weather))
+
+        age_filter = "age BETWEEN (:12) AND (:13)"
+
+        binder += min_age
+        binder += max_age
         
+        if sex == "All":
+            sex_filter = "(sex IN (:14, :15, :16, :17) or sex IS NULL)"
+            binder += ['X', 'U', 'M', 'F']
+        else:
+            sex_filter = "sex IN (:14)"
+            binder += sex
 
         #switch to retrieve requested sql request
         match view:
             case "1":
-                complex_sql = SQL.Query_1() #working
-                binder = [f'{CRASH_DATE_MIN}', f'{CRASH_DATE_MAX}']
+                complex_sql = SQL.Query_1(age_filter, sex_filter) #working
             case "2":
-                complex_sql = SQL.Query_2() #working
-                binder = []
+                complex_sql = SQL.Query_2(age_filter, sex_filter) #working
             case "3":
-                complex_sql = SQL.Query_3() #working
-                binder = []
+                complex_sql = SQL.Query_3(age_filter, sex_filter) #working
             case "4":
-                complex_sql = SQL.Query_4() #working
-                binder = []
+                complex_sql = SQL.Query_4(age_filter, sex_filter) #working
             case "5":
-                complex_sql = SQL.Query_5() #working
-                binder = []
+                complex_sql = SQL.Query_5(age_filter, sex_filter) #working
             
         sql_response = sql_request(complex_sql[0], binder)
         
@@ -237,25 +258,26 @@ class Dashboard_single(APIView):
     def get(self, request):
 
         view = request.GET['view']
-        binder = []
+
+         age_filter = "(age BETWEEN 0 AND 120 OR age IS NULL)"
+         sex_filter = "(sex IN ('X', 'U', 'M', 'F') or sex IS NULL)"
+        
+         binder = ['01-01-2014','12-31-2019', 'FOG/SMOKE/HAZE',
+        'SEVERE CROSS WIND GATE', 'SNOW', 'OTHER', 'CLEAR', 'RAIN', 'CLOUDY/OVERCAST',
+        'UNKNOWN', 'SLEET/HAIL']
 
         #switch to retrieve requested sql request
         match view:
             case "1":
-                complex_sql = SQL.Query_1() #working
-                binder = ['01-01-2014','12-31-2019']
+                complex_sql = SQL.Query_1(age_filter, sex_filter) #working
             case "2":
-                complex_sql = SQL.Query_2() #working
-                binder = []
+                complex_sql = SQL.Query_2(age_filter, sex_filter) #working
             case "3":
-                complex_sql = SQL.Query_3() #working
-                binder = []
+                complex_sql = SQL.Query_3(age_filter, sex_filter) #working
             case "4":
-                complex_sql = SQL.Query_4() #working
-                binder = []
+                complex_sql = SQL.Query_4(age_filter, sex_filter) #working
             case "5":
-                complex_sql = SQL.Query_5() #working
-                binder = []
+                complex_sql = SQL.Query_5(age_filter, sex_filter) #working
             
         sql_response = sql_request(complex_sql[0], binder)
         
