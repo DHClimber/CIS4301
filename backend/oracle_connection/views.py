@@ -41,6 +41,9 @@ class API_Connection(APIView):
 #Class view for getting all query results at once
 class Dashboard(APIView):
 
+    self.age_filter = "(age BETWEEN 0 AND 120 OR age IS NULL)"
+    self.sex_filter = "(sex IN ('X', 'U', 'M', 'F') or sex IS NULL)"
+
     def post(self, request):
     
         CRASH_DATE_MIN = request.data['CRASH_DATE_MIN']
@@ -49,24 +52,23 @@ class Dashboard(APIView):
         CRASH_DATE_MAX = request.data['CRASH_DATE_MAX']
         if CRASH_DATE_MAX == "" : CRASH_DATE_MAX = '12-31-2019' 
 
-        complex_sql1 = SQL.Query_1() #working
-        binder = [f'{CRASH_DATE_MIN}',f'{CRASH_DATE_MAX}']
+        binder = [CRASH_DATE_MIN, CRASH_DATE_MAX, 'FOG/SMOKE/HAZE',
+        'SEVERE CROSS WIND GATE', 'SNOW', 'OTHER', 'CLEAR', 'RAIN', 'CLOUDY/OVERCAST',
+        'UNKNOWN', 'SLEET/HAIL']
+        
+        complex_sql1 = SQL.Query_1(self.age_filter, self.sex_filter) #working
         sql_response1 = sql_request(complex_sql1[0], binder)
         
-        complex_sql2 = SQL.Query_2() #working
-        binder = []
+        complex_sql2 = SQL.Query_2(self.age_filter, self.sex_filter) #working
         sql_response2 = sql_request(complex_sql2[0], binder)
        
-        complex_sql3 = SQL.Query_3() #working
-        binder = []
+        complex_sql3 = SQL.Query_3(self.age_filter, self.sex_filter) #working
         sql_response3 = sql_request(complex_sql3[0], binder)
        
-        complex_sql4 = SQL.Query_4() #working
-        binder = []
+        complex_sql4 = SQL.Query_4(self.age_filter, self.sex_filter) #working
         sql_response4 = sql_request(complex_sql4[0], binder)
             
-        complex_sql5 = SQL.Query_5() #working
-        binder = []
+        complex_sql5 = SQL.Query_5(self.age_filter, self.sex_filter) #working
         sql_response5 = sql_request(complex_sql5[0], binder)
         
         queryMap = {
@@ -80,28 +82,28 @@ class Dashboard(APIView):
             "2" : {
                 "id" : "2",
                 "title" : f"{complex_sql2[1]}",
-                "xAxisLabel" : "month",
+                "xAxisLabel" : "year",
                 "yAxisLabel" : f"{complex_sql2[2]}",
                 "data" : sql_response2.values()
                 },
             "3" : {
                 "id" : "3",
                 "title" : f"{complex_sql3[1]}",
-                "xAxisLabel" : "day",
+                "xAxisLabel" : "year",
                 "yAxisLabel" : f"{complex_sql3[2]}",
                 "data" : sql_response3.values()
             },
             "4" : {
                 "id" : "4",
                 "title" : f"{complex_sql4[1]}",
-                "xAxisLabel" : "day",
+                "xAxisLabel" : "year",
                 "yAxisLabel" : f"{complex_sql4[2]}",
                 "data" : sql_response4.values()
             },
             "5" : {
                 "id" : "5",
                 "title" : f"{complex_sql5[1]}",
-                "xAxisLabel" : "day",
+                "xAxisLabel" : "year",
                 "yAxisLabel" : f"{complex_sql5[2]}",
                 "data" : sql_response5.values()
             }
@@ -113,25 +115,24 @@ class Dashboard(APIView):
         return Response(response_data)
 
     def get(self, request):
-    
-        complex_sql1 = SQL.Query_1() #working
-        binder = ['01-01-2014','12-31-2019']
+
+        binder = ['01-01-2014','12-31-2019', 'FOG/SMOKE/HAZE',
+        'SEVERE CROSS WIND GATE', 'SNOW', 'OTHER', 'CLEAR', 'RAIN', 'CLOUDY/OVERCAST',
+        'UNKNOWN', 'SLEET/HAIL']
+        
+        complex_sql1 = SQL.Query_1(self.age_filter, self.sex_filter) #working
         sql_response1 = sql_request(complex_sql1[0], binder)
         
-        complex_sql2 = SQL.Query_2() #working
-        binder = []
+        complex_sql2 = SQL.Query_2(self.age_filter, self.sex_filter) #working
         sql_response2 = sql_request(complex_sql2[0], binder)
        
-        complex_sql3 = SQL.Query_3() #working
-        binder = []
+        complex_sql3 = SQL.Query_3(self.age_filter, self.sex_filter) #working
         sql_response3 = sql_request(complex_sql3[0], binder)
        
-        complex_sql4 = SQL.Query_4() #working
-        binder = []
+        complex_sql4 = SQL.Query_4(self.age_filter, self.sex_filter) #working
         sql_response4 = sql_request(complex_sql4[0], binder)
             
-        complex_sql5 = SQL.Query_5() #working
-        binder = []
+        complex_sql5 = SQL.Query_5(self.age_filter, self.sex_filter) #working
         sql_response5 = sql_request(complex_sql5[0], binder)
         
         queryMap = {
@@ -145,28 +146,28 @@ class Dashboard(APIView):
             "2" : {
                 "id" : "2",
                 "title" : f"{complex_sql2[1]}",
-                "xAxisLabel" : "month",
+                "xAxisLabel" : "year",
                 "yAxisLabel" : f"{complex_sql2[2]}",
                 "data" : sql_response2.values()
                 },
             "3" : {
                 "id" : "3",
                 "title" : f"{complex_sql3[1]}",
-                "xAxisLabel" : "day",
+                "xAxisLabel" : "year",
                 "yAxisLabel" : f"{complex_sql3[2]}",
                 "data" : sql_response3.values()
             },
             "4" : {
                 "id" : "4",
                 "title" : f"{complex_sql4[1]}",
-                "xAxisLabel" : "day",
+                "xAxisLabel" : "year",
                 "yAxisLabel" : f"{complex_sql4[2]}",
                 "data" : sql_response4.values()
             },
             "5" : {
                 "id" : "5",
                 "title" : f"{complex_sql5[1]}",
-                "xAxisLabel" : "day",
+                "xAxisLabel" : "year",
                 "yAxisLabel" : f"{complex_sql5[2]}",
                 "data" : sql_response5.values()
             }
