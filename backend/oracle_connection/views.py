@@ -216,7 +216,7 @@ class Dashboard_single(APIView):
 
         binder.append(CRASH_DATE_MIN, CRASH_DATE_MAX)
         binder += weather
-        binder += list(None for i in range(9 - len(weather))
+        binder += list(None for i in range(9 - len(weather)))
 
         age_filter = "age BETWEEN (:12) AND (:13)"
 
@@ -259,10 +259,10 @@ class Dashboard_single(APIView):
 
         view = request.GET['view']
 
-         age_filter = "(age BETWEEN 0 AND 120 OR age IS NULL)"
-         sex_filter = "(sex IN ('X', 'U', 'M', 'F') or sex IS NULL)"
+        age_filter = "(age BETWEEN 0 AND 120 OR age IS NULL)"
+        sex_filter = "(sex IN ('X', 'U', 'M', 'F') or sex IS NULL)"
         
-         binder = ['01-01-2014','12-31-2019', 'FOG/SMOKE/HAZE',
+        binder = ['01-01-2014','12-31-2019', 'FOG/SMOKE/HAZE',
         'SEVERE CROSS WIND GATE', 'SNOW', 'OTHER', 'CLEAR', 'RAIN', 'CLOUDY/OVERCAST',
         'UNKNOWN', 'SLEET/HAIL']
 
