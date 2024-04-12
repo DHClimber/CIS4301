@@ -5,61 +5,7 @@ from rest_framework import status
 from oracle_connection.serializers import ConnectionSerializer
 from rest_framework.views import APIView
 from oracle_connection.oracle_interface import sql_request
-
-#Class for calling dynamic default values 
-class Default():
-    def min_date():
-        sql = """SELECT min(Crash_Date) FROM Crashes"""
-        response = str(sql_request(sql,None)['0']['MIN(CRASH_DATE)'])[:10]
-        return response
-    def max_date():
-        sql = """SELECT max(Crash_Date) FROM Crashes"""
-        response = str(sql_request(sql,None)['0']['MAX(CRASH_DATE)'])[:10]
-        return response
-    #gender default set based on most common occurence in data table
-    def gender():
-        sql = """SELECT (CASE WHEN Male - Female < 0 THEN 'F' ELSE 'M' END) AS SEX from (select count(sex) AS Female from people p1 where sex = 'F'), 
-        (select count(sex) AS Male from people  p2 where sex = 'M')"""
-        response = sql_request(sql,None)['0']['SEX']
-        return response
-    #This is not actual min, this is a range near the average age for default query
-    def min_age():
-        sql = """SELECT ROUND(AVG(Age) * 0.5,0) AS min_age FROM People"""
-        response = str(sql_request(sql,None)['0']['MIN_AGE'])
-        return response
-    #This is not actual min, this is a range near the average age for default query
-    def max_age():
-        sql = """SELECT ROUND(AVG(Age) * 1.5,0) AS max_age FROM People"""
-        response = str(sql_request(sql,None)['0']['MAX_AGE'])
-        return response
-    #default weather is set based on most common weather in table
-    def weather():
-        sql = """SELECT W1 AS Weather_condition FROM (SELECT W1  FROM (SELECT W1, C1 FROM (SELECT DISTINCT Weather_condition W1, count(Weather_condition) OVER(PARTITION BY Weather_condition)  AS C1 FROM CRASHES))
-        CROSS JOIN 
-        (SELECT W2, C2 FROM (SELECT DISTINCT Weather_condition W2, count(Weather_condition) OVER(PARTITION BY Weather_condition)  AS C2 FROM CRASHES))
-        MINUS
-        (SELECT W1 FROM (SELECT W1, C1 FROM (SELECT DISTINCT Weather_condition W1, count(Weather_condition) OVER(PARTITION BY Weather_condition)  AS C1 FROM CRASHES))
-        CROSS JOIN 
-        (SELECT W2, C2 FROM (SELECT DISTINCT Weather_condition W2, count(Weather_condition) OVER(PARTITION BY Weather_condition)  AS C2 FROM CRASHES))
-        WHERE C1 < C2))"""
-        response = str(sql_request(sql,None)['0']['WEATHER_CONDITION'])
-        return response
-    #default primary cause excludes unable to determine and selects the next most common primary cause
-    def primary_cause():
-        sql = """SELECT P1 AS Primary_cause FROM (SELECT P1  FROM (SELECT P1, C1 FROM (SELECT DISTINCT Prim_contributory_cause P1, count(Prim_contributory_cause) OVER(PARTITION BY Prim_contributory_cause)  AS C1 FROM CRASHES
-        WHERE Prim_contributory_cause <> 'UNABLE TO DETERMINE'))
-        CROSS JOIN 
-        (SELECT P2, C2 FROM (SELECT DISTINCT Prim_contributory_cause P2, count(Prim_contributory_cause) OVER(PARTITION BY Prim_contributory_cause )  AS C2 FROM CRASHES
-        WHERE Prim_contributory_cause <> 'UNABLE TO DETERMINE'))
-        MINUS
-        (SELECT P1 FROM (SELECT P1, C1 FROM (SELECT DISTINCT Prim_contributory_cause P1, count(Prim_contributory_cause) OVER(PARTITION BY Prim_contributory_cause)  AS C1 FROM CRASHES
-        WHERE Prim_contributory_cause <> 'UNABLE TO DETERMINE'))
-        CROSS JOIN 
-        (SELECT P2, C2 FROM (SELECT DISTINCT Prim_contributory_cause P2, count(Prim_contributory_cause) OVER(PARTITION BY Prim_contributory_cause)  AS C2 FROM CRASHES
-        WHERE Prim_contributory_cause <> 'UNABLE TO DETERMINE'))
-        WHERE C1 < C2))"""
-        response = str(sql_request(sql,None)['0']['PRIMARY_CAUSE'])
-        return response
+from . import SQL
 
 class API_Connection(APIView):
     
@@ -92,87 +38,235 @@ class API_Connection(APIView):
             return Response(message, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=400)
     
+#Class view for getting all query results at once
 class Dashboard(APIView):
 
-    def get(self, request):
+    def post(self, request):
+    
+        CRASH_DATE_MIN = request.data['CRASH_DATE_MIN']
+        if CRASH_DATE_MIN == "": CRASH_DATE_MIN = '01-01-2014'  
 
-        graphNum = request.GET.get("tile", None)
-        min_date = request.GET.get("minDate", "")
-        max_date = request.GET.get("maxDate", "")
+        CRASH_DATE_MAX = request.data['CRASH_DATE_MAX']
+        if CRASH_DATE_MAX == "" : CRASH_DATE_MAX = '12-31-2019' 
 
-        if graphNum != None and graphNum not in ["1", "2", "3", "4", "5"]:
-            return HttpResponseNotFound("Graph Number Not Found")
+        complex_sql1 = SQL.Query_1() #working
+        binder = [f'{CRASH_DATE_MIN}',f'{CRASH_DATE_MAX}']
+        sql_response1 = sql_request(complex_sql1[0], binder)
         
-        if min_date == "":
-            min_date = "2000-01-01" # don't hardcode
-        
-        if max_date == "":
-            max_date = "2025-01-01" # don't hardcode
-        
-        crashes_by_year = sql_request("""SELECT EXTRACT(YEAR FROM CRASH_DATE) "year", 
-                                COUNT(*) "numCrashes" FROM 
-                                Crashes WHERE CRASH_DATE BETWEEN TO_DATE(:1, 'YYYY-MM-DD') 
-                                AND TO_DATE(:2, 'YYYY-MM-DD') GROUP BY EXTRACT(YEAR FROM CRASH_DATE) 
-                                ORDER BY 1""", [min_date, max_date])
-        
-        crashes_by_month = sql_request("""SELECT EXTRACT(MONTH FROM CRASH_DATE) "month", 
-                                COUNT(*) "tuna" FROM 
-                                Crashes WHERE CRASH_DATE BETWEEN TO_DATE(:1, 'YYYY-MM-DD') 
-                                AND TO_DATE(:2, 'YYYY-MM-DD') GROUP BY EXTRACT(MONTH FROM CRASH_DATE) 
-                                ORDER BY 1""", [min_date, max_date])
-        
-        crashes_by_day = sql_request("""SELECT CRASH_DAY_OF_WEEK "day", 
-                                COUNT(*) "Number of Fatalities" FROM 
-                                Crashes WHERE CRASH_DATE BETWEEN TO_DATE(:1, 'YYYY-MM-DD') 
-                                AND TO_DATE(:2, 'YYYY-MM-DD') GROUP BY CRASH_DAY_OF_WEEK 
-                                ORDER BY 1""", [min_date, max_date])
+        complex_sql2 = SQL.Query_2() #working
+        binder = []
+        sql_response2 = sql_request(complex_sql2[0], binder)
+       
+        complex_sql3 = SQL.Query_3() #working
+        binder = []
+        sql_response3 = sql_request(complex_sql3[0], binder)
+       
+        complex_sql4 = SQL.Query_4() #working
+        binder = []
+        sql_response4 = sql_request(complex_sql4[0], binder)
+            
+        complex_sql5 = SQL.Query_5() #working
+        binder = []
+        sql_response5 = sql_request(complex_sql5[0], binder)
         
         queryMap = {
             "1" : {
                 "id" : "1",
-                "title" : "Crashes per Year",
+                "title" : f"{complex_sql1[1]}",
                 "xAxisLabel" : "year",
-                "yAxisLabel" : "numCrashes",
-                "data" : crashes_by_year.values()
+                "yAxisLabel" : f"{complex_sql1[2]}",
+                "data" : sql_response1.values()
                 },
             "2" : {
                 "id" : "2",
-                "title" : "Crashes per Month",
+                "title" : f"{complex_sql2[1]}",
                 "xAxisLabel" : "month",
-                "yAxisLabel" : "tuna",
-                "data" : crashes_by_month.values()
+                "yAxisLabel" : f"{complex_sql2[2]}",
+                "data" : sql_response2.values()
                 },
             "3" : {
                 "id" : "3",
-                "title" : "Crashes per Day",
+                "title" : f"{complex_sql3[1]}",
                 "xAxisLabel" : "day",
-                "yAxisLabel" : "Number of Fatalities",
-                "data" : crashes_by_day.values()
+                "yAxisLabel" : f"{complex_sql3[2]}",
+                "data" : sql_response3.values()
+            },
+            "4" : {
+                "id" : "4",
+                "title" : f"{complex_sql4[1]}",
+                "xAxisLabel" : "day",
+                "yAxisLabel" : f"{complex_sql4[2]}",
+                "data" : sql_response4.values()
+            },
+            "5" : {
+                "id" : "5",
+                "title" : f"{complex_sql5[1]}",
+                "xAxisLabel" : "day",
+                "yAxisLabel" : f"{complex_sql5[2]}",
+                "data" : sql_response5.values()
             }
         }
 
-        if graphNum == None:
-            response_data =[queryMap["1"], queryMap["2"], queryMap["3"]]
+        response_data =[queryMap["1"], queryMap["2"], queryMap["3"],queryMap["4"],queryMap["5"]]
 
-        else:
-            response_data = queryMap[graphNum]
-
-
+  
         return Response(response_data)
-
-class Default_values(APIView):
 
     def get(self, request):
-        response_data = {}
-        response_data["min_date"] = Default.min_date()
-        response_data["max_date"] = Default.max_date()
-        response_data["gender"] = Default.gender()
-        response_data["min_age"] = Default.min_age()
-        response_data["max_age"] = Default.max_age()
-        response_data["weather"] = Default.weather()
-        response_data["primary cause"] = Default.primary_cause()
+    
+        complex_sql1 = SQL.Query_1() #working
+        binder = ['01-01-2014','12-31-2019']
+        sql_response1 = sql_request(complex_sql1[0], binder)
+        
+        complex_sql2 = SQL.Query_2() #working
+        binder = []
+        sql_response2 = sql_request(complex_sql2[0], binder)
+       
+        complex_sql3 = SQL.Query_3() #working
+        binder = []
+        sql_response3 = sql_request(complex_sql3[0], binder)
+       
+        complex_sql4 = SQL.Query_4() #working
+        binder = []
+        sql_response4 = sql_request(complex_sql4[0], binder)
             
+        complex_sql5 = SQL.Query_5() #working
+        binder = []
+        sql_response5 = sql_request(complex_sql5[0], binder)
+        
+        queryMap = {
+            "1" : {
+                "id" : "1",
+                "title" : f"{complex_sql1[1]}",
+                "xAxisLabel" : "year",
+                "yAxisLabel" : f"{complex_sql1[2]}",
+                "data" : sql_response1.values()
+                },
+            "2" : {
+                "id" : "2",
+                "title" : f"{complex_sql2[1]}",
+                "xAxisLabel" : "month",
+                "yAxisLabel" : f"{complex_sql2[2]}",
+                "data" : sql_response2.values()
+                },
+            "3" : {
+                "id" : "3",
+                "title" : f"{complex_sql3[1]}",
+                "xAxisLabel" : "day",
+                "yAxisLabel" : f"{complex_sql3[2]}",
+                "data" : sql_response3.values()
+            },
+            "4" : {
+                "id" : "4",
+                "title" : f"{complex_sql4[1]}",
+                "xAxisLabel" : "day",
+                "yAxisLabel" : f"{complex_sql4[2]}",
+                "data" : sql_response4.values()
+            },
+            "5" : {
+                "id" : "5",
+                "title" : f"{complex_sql5[1]}",
+                "xAxisLabel" : "day",
+                "yAxisLabel" : f"{complex_sql5[2]}",
+                "data" : sql_response5.values()
+            }
+        }
+
+        response_data =[queryMap["1"], queryMap["2"], queryMap["3"],queryMap["4"],queryMap["5"]]
+
+  
         return Response(response_data)
+
+#Class view for returning single SQL Queries 
+#Format for passing K,V through url  /oracle_connection/dashboard_single/?view=1
+#
+# Format for POST request
+# {"view": "1",
+# "CRASH_DATE_MIN": "01-01-2014",
+# "CRASH_DATE_MAX": "12-31-2019"
+# }
+
+class Dashboard_single(APIView):
+
+    def post(self, request):
+        
+        view = request.data['view']
+        CRASH_DATE_MIN = request.data['CRASH_DATE_MIN']
+        if CRASH_DATE_MIN == "": CRASH_DATE_MIN = '01-01-2014'  
+
+        CRASH_DATE_MAX = request.data['CRASH_DATE_MAX']
+        if CRASH_DATE_MAX == "" : CRASH_DATE_MAX = '12-31-2019' 
+
+        binder = []
+
+        if view == None:
+            return Response({"error": 'please select 1-5 for key "view"'})
+        
+
+        #switch to retrieve requested sql request
+        match view:
+            case "1":
+                complex_sql = SQL.Query_1() #working
+                binder = [f'{CRASH_DATE_MIN}', f'{CRASH_DATE_MAX}']
+            case "2":
+                complex_sql = SQL.Query_2() #working
+                binder = []
+            case "3":
+                complex_sql = SQL.Query_3() #working
+                binder = []
+            case "4":
+                complex_sql = SQL.Query_4() #working
+                binder = []
+            case "5":
+                complex_sql = SQL.Query_5() #working
+                binder = []
+            
+        sql_response = sql_request(complex_sql[0], binder)
+        
+        queryMap = {
+                "id" : "1",
+                "title" : f"{complex_sql[1]}",
+                "xAxisLabel" : "year",
+                "yAxisLabel" : f"{complex_sql[2]}",
+                "data" : sql_response.values()
+                }
+
+        return Response(queryMap)
+    
+    def get(self, request):
+
+        view = request.GET['view']
+        binder = []
+
+        #switch to retrieve requested sql request
+        match view:
+            case "1":
+                complex_sql = SQL.Query_1() #working
+                binder = ['01-01-2014','12-31-2019']
+            case "2":
+                complex_sql = SQL.Query_2() #working
+                binder = []
+            case "3":
+                complex_sql = SQL.Query_3() #working
+                binder = []
+            case "4":
+                complex_sql = SQL.Query_4() #working
+                binder = []
+            case "5":
+                complex_sql = SQL.Query_5() #working
+                binder = []
+            
+        sql_response = sql_request(complex_sql[0], binder)
+        
+        queryMap = {
+                "id" : "1",
+                "title" : f"{complex_sql[1]}",
+                "xAxisLabel" : "year",
+                "yAxisLabel" : f"{complex_sql[2]}",
+                "data" : sql_response.values()
+                }
+
+        return Response(queryMap)
     
 #Query total tuples
 class Schneider(APIView):
