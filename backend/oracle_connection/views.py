@@ -41,15 +41,15 @@ class API_Connection(APIView):
 #Class view for getting all query results at once
 class Dashboard(APIView):
 
-    self.age_filter = "(age BETWEEN 0 AND 120 OR age IS NULL)"
-    self.sex_filter = "(sex IN ('X', 'U', 'M', 'F') or sex IS NULL)"
+    age_filter = "(age BETWEEN 0 AND 120 OR age IS NULL)"
+    sex_filter = "(sex IN ('X', 'U', 'M', 'F') or sex IS NULL)"
 
     def post(self, request):
     
-        CRASH_DATE_MIN = request.data['CRASH_DATE_MIN']
+        CRASH_DATE_MIN = request.data.get('CRASH_DATE_MIN', "")
         if CRASH_DATE_MIN == "": CRASH_DATE_MIN = '01-01-2014'  
 
-        CRASH_DATE_MAX = request.data['CRASH_DATE_MAX']
+        CRASH_DATE_MAX = request.data.get('CRASH_DATE_MAX', "")
         if CRASH_DATE_MAX == "" : CRASH_DATE_MAX = '12-31-2019' 
 
         binder = [CRASH_DATE_MIN, CRASH_DATE_MAX, 'FOG/SMOKE/HAZE',
@@ -191,7 +191,7 @@ class Dashboard_single(APIView):
 
     def post(self, request):
         
-        view = request.data['view']
+        view = str(request.data['view'])
 
         if view == None:
             return Response({"error": 'please select 1-5 for key "view"'})
@@ -199,36 +199,53 @@ class Dashboard_single(APIView):
         sex = request.data['sex']
         min_age = request.data['min_age']
         max_age = request.data['max_age']
-        weather = request.data['weather']
-
-        CRASH_DATE_MIN = request.data['CRASH_DATE_MIN']
-        if CRASH_DATE_MIN == "": CRASH_DATE_MIN = '01-01-2014'  
-
-        CRASH_DATE_MAX = request.data['CRASH_DATE_MAX']
-        if CRASH_DATE_MAX == "" : CRASH_DATE_MAX = '12-31-2019' 
-
-        if weather == None: 
+        
+        if "weather" in request.data.keys():
+            weather = request.data['weather']
+        else:
             weather = ['FOG/SMOKE/HAZE', 'SEVERE CROSS WIND GATE', 
-                    'SNOW', 'OTHER', 'CLEAR', 'RAIN', 'CLOUDY/OVERCAST',
-                    'UNKNOWN', 'SLEET/HAIL']
+                'SNOW', 'OTHER', 'CLEAR', 'RAIN', 'CLOUDY/OVERCAST',
+                'UNKNOWN', 'SLEET/HAIL']
+            
+        if "CRASH_DATE_MIN" in request.data.keys():
+            CRASH_DATE_MIN = request.data['CRASH_DATE_MIN']
+        else:
+            CRASH_DATE_MIN = '01-01-2014'  
+
+        if "CRASH_DATE_MAX" in request.data.keys():
+            CRASH_DATE_MAX = request.data['CRASH_DATE_MAX']
+        else:
+            CRASH_DATE_MAX = '12-31-2019' 
 
         binder = []
 
-        binder.append(CRASH_DATE_MIN, CRASH_DATE_MAX)
+        binder += [CRASH_DATE_MIN]
+        binder += [CRASH_DATE_MAX]
         binder += weather
         binder += list(None for i in range(9 - len(weather)))
 
         age_filter = "age BETWEEN (:12) AND (:13)"
 
-        binder += min_age
-        binder += max_age
+        binder += [min_age]
+        binder += [max_age]
         
         if sex == "All":
             sex_filter = "(sex IN (:14, :15, :16, :17) or sex IS NULL)"
             binder += ['X', 'U', 'M', 'F']
         else:
             sex_filter = "sex IN (:14)"
-            binder += sex
+            binder += [sex]
+
+        if view == "3":
+            binder += binder
+        
+        if view == "5":
+            temp = []
+
+            for i in range(5):
+                for var in binder:
+                    temp.append(var)
+            binder = temp
 
         #switch to retrieve requested sql request
         match view:
@@ -257,7 +274,7 @@ class Dashboard_single(APIView):
     
     def get(self, request):
 
-        view = request.GET['view']
+        view = str(request.GET['view'])
 
         age_filter = "(age BETWEEN 0 AND 120 OR age IS NULL)"
         sex_filter = "(sex IN ('X', 'U', 'M', 'F') or sex IS NULL)"
@@ -265,6 +282,17 @@ class Dashboard_single(APIView):
         binder = ['01-01-2014','12-31-2019', 'FOG/SMOKE/HAZE',
         'SEVERE CROSS WIND GATE', 'SNOW', 'OTHER', 'CLEAR', 'RAIN', 'CLOUDY/OVERCAST',
         'UNKNOWN', 'SLEET/HAIL']
+
+        if view == "3":
+            binder += binder
+
+        if view == "5":
+            temp = []
+
+            for i in range(5):
+                for var in binder:
+                    temp.append(var)
+            binder = temp
 
         #switch to retrieve requested sql request
         match view:
@@ -281,6 +309,7 @@ class Dashboard_single(APIView):
             
         sql_response = sql_request(complex_sql[0], binder)
         
+        print(sql_response)
         queryMap = {
                 "id" : view,
                 "title" : f"{complex_sql[1]}",
