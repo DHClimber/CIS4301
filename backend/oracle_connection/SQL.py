@@ -112,7 +112,6 @@ def Query_3(age_filter, sex_filter):
     ORDER BY YEAR ASC,
         3 ASC
 	"""
-	print(f"Query 3 {sql}")
 	return [sql, "Annual Crash Counts on Top 5 (Overall) Streets and Totals","Crash Count"]
 
 #4 Yearly Maximum Injuries by Vehicle Make
@@ -158,6 +157,7 @@ def Query_4(age_filter, sex_filter):
         TEMP3
     WHERE TEMP2.YEAR = TEMP3.YEAR
         AND TEMP2.INJ = TEMP3.INJ
+		AND TEMP2.YEAR <> 2014
     ORDER BY TEMP2.YEAR
     """
 	return [sql, "Yearly Maximum Injuries by Vehicle Make", "Injury Count"]

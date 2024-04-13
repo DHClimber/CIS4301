@@ -6,6 +6,7 @@ from oracle_connection.serializers import ConnectionSerializer
 from rest_framework.views import APIView
 from oracle_connection.oracle_interface import sql_request
 from . import SQL
+from . import wide_converter as wc
 
 class API_Connection(APIView):
     
@@ -55,21 +56,27 @@ class Dashboard(APIView):
         binder = [CRASH_DATE_MIN, CRASH_DATE_MAX, 'FOG/SMOKE/HAZE',
         'SEVERE CROSS WIND GATE', 'SNOW', 'OTHER', 'CLEAR', 'RAIN', 'CLOUDY/OVERCAST',
         'UNKNOWN', 'SLEET/HAIL']
+
+        #special binder for query 3
+        binder_special3 = binder + binder
+
+        #special binder for query 5
+        binder_special5 = binder + binder + binder + binder + binder
         
         complex_sql1 = SQL.Query_1(self.age_filter, self.sex_filter) #working
-        sql_response1 = sql_request(complex_sql1[0], binder)
-        
+        sql_response1 = wc.parse(sql_request(complex_sql1[0], binder))
+               
         complex_sql2 = SQL.Query_2(self.age_filter, self.sex_filter) #working
-        sql_response2 = sql_request(complex_sql2[0], binder)
+        sql_response2 = wc.parse(sql_request(complex_sql2[0], binder))
        
         complex_sql3 = SQL.Query_3(self.age_filter, self.sex_filter) #working
-        sql_response3 = sql_request(complex_sql3[0], binder)
+        sql_response3 = wc.parse(sql_request(complex_sql3[0], binder_special3))
        
         complex_sql4 = SQL.Query_4(self.age_filter, self.sex_filter) #working
-        sql_response4 = sql_request(complex_sql4[0], binder)
+        sql_response4 = wc.parse(sql_request(complex_sql4[0], binder))
             
         complex_sql5 = SQL.Query_5(self.age_filter, self.sex_filter) #working
-        sql_response5 = sql_request(complex_sql5[0], binder)
+        sql_response5 = sql_request(complex_sql5[0], binder_special5)
         
         queryMap = {
             "1" : {
@@ -119,22 +126,28 @@ class Dashboard(APIView):
         binder = ['01-01-2014','12-31-2019', 'FOG/SMOKE/HAZE',
         'SEVERE CROSS WIND GATE', 'SNOW', 'OTHER', 'CLEAR', 'RAIN', 'CLOUDY/OVERCAST',
         'UNKNOWN', 'SLEET/HAIL']
-        
+
+        #because binding is positional, query 3 requires a list of 22 inputs for each position
+        binder_special3 = binder + binder
+
+        #special binder for query 5
+        binder_special5 = binder + binder + binder + binder + binder
+           
         complex_sql1 = SQL.Query_1(self.age_filter, self.sex_filter) #working
-        sql_response1 = sql_request(complex_sql1[0], binder)
+        sql_response1 = wc.parse(sql_request(complex_sql1[0], binder))
         
         complex_sql2 = SQL.Query_2(self.age_filter, self.sex_filter) #working
-        sql_response2 = sql_request(complex_sql2[0], binder)
+        sql_response2 = wc.parse(sql_request(complex_sql2[0], binder))
        
         complex_sql3 = SQL.Query_3(self.age_filter, self.sex_filter) #working
-        sql_response3 = sql_request(complex_sql3[0], binder)
-       
+        sql_response3 = wc.parse(sql_request(complex_sql3[0], binder_special3))
+        
         complex_sql4 = SQL.Query_4(self.age_filter, self.sex_filter) #working
-        sql_response4 = sql_request(complex_sql4[0], binder)
+        sql_response4 = wc.parse(sql_request(complex_sql4[0], binder))
             
         complex_sql5 = SQL.Query_5(self.age_filter, self.sex_filter) #working
-        sql_response5 = sql_request(complex_sql5[0], binder)
-        
+        sql_response5 = sql_request(complex_sql5[0], binder_special5)
+
         queryMap = {
             "1" : {
                 "id" : "1",
@@ -191,6 +204,32 @@ class Dashboard_single(APIView):
 
     def post(self, request):
         
+        #error catching when kv missing
+        error_track = ""
+        try:
+            request.data['view']
+        except Exception:
+            error_track += "KV pair 'view' missing\n "
+        try:
+            request.data['sex']
+        except Exception:
+            error_track += "KV pair 'sex' missing\n "
+        try:
+            request.data['min_age']
+        except Exception:
+            error_track += "KV pair 'min_age' missing\n "
+        try:
+            request.data['max_age']
+        except Exception:
+            error_track += "KV pair 'max_age' missing\n "
+        try:
+            request.data['weather']
+        except Exception:
+            error_track += "KV pair 'weather' missing\n "
+        if error_track != "": return Response({"Error message": f"{error_track}"})
+        
+
+
         view = str(request.data['view'])
 
         if view == None:
@@ -198,10 +237,13 @@ class Dashboard_single(APIView):
 
         sex = request.data['sex']
         min_age = request.data['min_age']
+        if min_age == "": min_age = 0
         max_age = request.data['max_age']
+        if max_age == "": max_age = 1000
         
-        if "weather" in request.data.keys():
-            weather = request.data['weather']
+        weather=[]
+        if "weather" in request.data.keys() and request.data['weather'] != "":
+            weather.append(request.data['weather'])
         else:
             weather = ['FOG/SMOKE/HAZE', 'SEVERE CROSS WIND GATE', 
                 'SNOW', 'OTHER', 'CLEAR', 'RAIN', 'CLOUDY/OVERCAST',
@@ -228,8 +270,8 @@ class Dashboard_single(APIView):
 
         binder += [min_age]
         binder += [max_age]
-        
-        if sex == "All":
+    
+        if str.upper(sex) == "ALL" or str.upper(sex) =="":
             sex_filter = "(sex IN (:14, :15, :16, :17) or sex IS NULL)"
             binder += ['X', 'U', 'M', 'F']
         else:
@@ -261,7 +303,10 @@ class Dashboard_single(APIView):
                 complex_sql = SQL.Query_5(age_filter, sex_filter) #working
             
         sql_response = sql_request(complex_sql[0], binder)
-        
+
+        if int(view) < 5:
+            sql_response = wc.parse(sql_response)
+               
         queryMap = {
                 "id" : view,
                 "title" : f"{complex_sql[1]}",
@@ -308,8 +353,9 @@ class Dashboard_single(APIView):
                 complex_sql = SQL.Query_5(age_filter, sex_filter) #working
             
         sql_response = sql_request(complex_sql[0], binder)
-        
-        print(sql_response)
+        if int(view) < 5:
+            sql_response = wc.parse(sql_response)
+
         queryMap = {
                 "id" : view,
                 "title" : f"{complex_sql[1]}",
