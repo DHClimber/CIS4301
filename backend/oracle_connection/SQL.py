@@ -44,19 +44,21 @@ def Query_2(age_filter, sex_filter):
         PRIM_CONTRIBUTORY_CAUSE,
         Total_Crashes
     FROM (
-        SELECT TO_CHAR(CRASH_DATE, 'YYYY') AS Year,
-            PRIM_CONTRIBUTORY_CAUSE,
-            COUNT(*) AS Total_Crashes,
+        SELECT TO_CHAR(c.CRASH_DATE, 'YYYY') AS Year,
+            c.PRIM_CONTRIBUTORY_CAUSE,
+            COUNT(DISTINCT(c.RD_NO)) AS Total_Crashes,
             DENSE_RANK() OVER (
-                PARTITION BY TO_CHAR(CRASH_DATE, 'YYYY') ORDER BY COUNT(*) DESC
+                PARTITION BY TO_CHAR(c.CRASH_DATE, 'YYYY') ORDER BY COUNT(*) DESC
                 ) AS Rank
-        FROM Crashes
+        FROM Crashes c
+        INNER JOIN people p
+        ON p.RD_NO = c.RD_NO
         WHERE C.CRASH_DATE BETWEEN TO_DATE(:1, 'MM-DD-YYYY')
                     AND TO_DATE(:2, 'MM-DD-YYYY')
-	AND weather_condition IN (:3, :4, :5, :6, :7, :8, :9, :10, :11) 
- 	AND {age_filter} AND {sex_filter}
-        GROUP BY TO_CHAR(CRASH_DATE, 'YYYY'),
-            PRIM_CONTRIBUTORY_CAUSE
+        AND weather_condition IN (:3, :4, :5, :6, :7, :8, :9, :10, :11) 
+        AND {age_filter} AND {sex_filter}
+        GROUP BY TO_CHAR(c.CRASH_DATE, 'YYYY'),
+        PRIM_CONTRIBUTORY_CAUSE
         )
     WHERE Rank <= 5
     ORDER BY Year,
@@ -68,44 +70,49 @@ def Query_2(age_filter, sex_filter):
 def Query_3(age_filter, sex_filter):
 	sql = f"""SELECT *
     FROM (
-        SELECT EXTRACT(YEAR FROM CRASH_DATE) AS year,
+        SELECT EXTRACT(YEAR FROM c.CRASH_DATE) AS year,
             Street_Name,
-            COUNT(*)
-        FROM Crashes
+            COUNT(DISTINCT(c.RD_NO)) as "Crash Count"
+        FROM Crashes c
+        INNER JOIN people p
+        ON c.RD_NO = p.RD_NO
         WHERE Street_Name IN (
                 SELECT Street_Name
                 FROM crashes
                 GROUP BY street_name
                 ORDER BY COUNT(*) DESC FETCH FIRST 5 ROWS ONLY
                 )
-	AND C.CRASH_DATE BETWEEN TO_DATE(:1, 'MM-DD-YYYY')
-                    AND TO_DATE(:2, 'MM-DD-YYYY')
-	AND weather_condition IN (:3, :4, :5, :6, :7, :8, :9, :10, :11) 
- 	AND {age_filter} AND {sex_filter}
-        GROUP BY EXTRACT(YEAR FROM CRASH_DATE),
+		AND C.CRASH_DATE BETWEEN TO_DATE(:1, 'MM-DD-YYYY')
+            AND TO_DATE(:2, 'MM-DD-YYYY')
+        AND weather_condition IN (:3, :4, :5, :6, :7, :8, :9, :10, :11) 
+        AND {age_filter} AND {sex_filter}
+        GROUP BY EXTRACT(YEAR FROM c.CRASH_DATE),
             Street_Name
         
         UNION
         
-        SELECT EXTRACT(YEAR FROM CRASH_DATE) AS year,
+        SELECT EXTRACT(YEAR FROM c.CRASH_DATE) AS year,
             'Total',
-            COUNT(*)
-        FROM crashes
+            COUNT(DISTINCT(c.RD_NO)) as "Crash Count"
+        FROM crashes c
+        INNER JOIN people p
+        ON p.RD_NO = c.RD_NO
         WHERE Street_Name IN (
                 SELECT Street_Name
                 FROM crashes
                 GROUP BY street_name
                 ORDER BY COUNT(*) DESC FETCH FIRST 5 ROWS ONLY
                 )
-	WHERE C.CRASH_DATE BETWEEN TO_DATE(:1, 'MM-DD-YYYY')
-                    AND TO_DATE(:2, 'MM-DD-YYYY')
-	AND weather_condition IN (:3, :4, :5, :6, :7, :8, :9, :10, :11) 
- 	AND {age_filter} AND {sex_filter}
-        GROUP BY EXTRACT(YEAR FROM CRASH_DATE)
+		AND C.CRASH_DATE BETWEEN TO_DATE(:1, 'MM-DD-YYYY')
+            AND TO_DATE(:2, 'MM-DD-YYYY')
+        AND weather_condition IN (:3, :4, :5, :6, :7, :8, :9, :10, :11) 
+        AND {age_filter} AND {sex_filter}
+        GROUP BY EXTRACT(YEAR FROM c.CRASH_DATE)
         )
     ORDER BY YEAR ASC,
         3 ASC
 	"""
+	print(f"Query 3 {sql}")
 	return [sql, "Annual Crash Counts on Top 5 (Overall) Streets and Totals","Crash Count"]
 
 #4 Yearly Maximum Injuries by Vehicle Make
@@ -114,16 +121,19 @@ def Query_4(age_filter, sex_filter):
     WITH TEMP1
     AS (
         SELECT V.MAKE,
+             C.RD_NO,
             Extract(YEAR FROM C.CRASH_DATE) AS YEAR,
             MAX(C.INJURIES_TOTAL) AS INJ
         FROM CRASHES C
-	WHERE C.CRASH_DATE BETWEEN TO_DATE(:1, 'MM-DD-YYYY')
-                    AND TO_DATE(:2, 'MM-DD-YYYY')
-	AND weather_condition IN (:3, :4, :5, :6, :7, :8, :9, :10, :11) 
- 	AND {age_filter} AND {sex_filter}
         JOIN VEHICLES V ON C.RD_NO = V.RD_NO
+		JOIN PEOPLE p ON C.RD_NO = p.RD_NO
+		WHERE C.CRASH_DATE BETWEEN TO_DATE(:1, 'MM-DD-YYYY')
+            AND TO_DATE(:2, 'MM-DD-YYYY')
+        AND weather_condition IN (:3, :4, :5, :6, :7, :8, :9, :10, :11) 
+        AND {age_filter} AND {sex_filter}
         GROUP BY Extract(YEAR FROM C.CRASH_DATE),
-            V.MAKE
+            V.MAKE,
+            C.RD_NO
         ),
     TEMP2
     AS (
@@ -143,14 +153,14 @@ def Query_4(age_filter, sex_filter):
         )
     SELECT TEMP2.YEAR,
         TEMP2.MAKE,
-        TEMP2.INJ
+        TEMP2.INJ AS "Injury Count"
     FROM TEMP2,
         TEMP3
     WHERE TEMP2.YEAR = TEMP3.YEAR
         AND TEMP2.INJ = TEMP3.INJ
     ORDER BY TEMP2.YEAR
     """
-	return [sql, "Yearly Maximum Injuries by Vehicle Make", "Number of Injuries"]
+	return [sql, "Yearly Maximum Injuries by Vehicle Make", "Injury Count"]
 	
 #5 Comparative Analysis of Contributing Factors to Traffic Crashes by Year
 def Query_5(age_filter, sex_filter):
@@ -158,72 +168,82 @@ def Query_5(age_filter, sex_filter):
     WITH Temp1
     AS (
         --Cell Phone
-        SELECT EXTRACT(YEAR FROM CRASH_DATE) AS YEAR,
+        SELECT EXTRACT(YEAR FROM C.CRASH_DATE) AS YEAR,
             ROUND(AVG(POSTED_LIMIT)) AS CELL_PHONE
-        FROM Crashes
+        FROM Crashes C
+		INNER JOIN People p
+		ON p.RD_NO = c.RD_NO
         WHERE PRIM_CONTRIBUTORY_CAUSE IN (
                 'CELL PHONE USE OTHER THAN TEXTING',
                 'TEXTING'
                 )
-	AND C.CRASH_DATE BETWEEN TO_DATE(:1, 'MM-DD-YYYY')
-                    AND TO_DATE(:2, 'MM-DD-YYYY')
-	AND weather_condition IN (:3, :4, :5, :6, :7, :8, :9, :10, :11) 
- 	AND {age_filter} AND {sex_filter}
-        GROUP BY EXTRACT(YEAR FROM CRASH_DATE)
+		AND C.CRASH_DATE BETWEEN TO_DATE(:1, 'MM-DD-YYYY')
+        AND TO_DATE(:2, 'MM-DD-YYYY')
+        AND weather_condition IN (:3, :4, :5, :6, :7, :8, :9, :10, :11) 
+        AND {age_filter} AND {sex_filter}
+        GROUP BY EXTRACT(YEAR FROM C.CRASH_DATE)
         ORDER BY 1 ASC
         ),
     Temp2
     AS (
         --DUI
-        SELECT EXTRACT(YEAR FROM CRASH_DATE) AS YEAR,
+        SELECT EXTRACT(YEAR FROM C.CRASH_DATE) AS YEAR,
             ROUND(AVG(POSTED_LIMIT)) AS DUI_CAUSE
-        FROM Crashes
+        FROM Crashes C
+		INNER JOIN People p
+		ON p.RD_NO = c.RD_NO
         WHERE PRIM_CONTRIBUTORY_CAUSE IN ('UNDER THE INFLUENCE OF ALCOHOL/DRUGS (USE WHEN ARREST IS EFFECTED)')
-	AND C.CRASH_DATE BETWEEN TO_DATE(:1, 'MM-DD-YYYY')
-                    AND TO_DATE(:2, 'MM-DD-YYYY')
-	AND weather_condition IN (:3, :4, :5, :6, :7, :8, :9, :10, :11) 
- 	AND {age_filter} AND {sex_filter}
-        GROUP BY EXTRACT(YEAR FROM CRASH_DATE)
+		AND C.CRASH_DATE BETWEEN TO_DATE(:1, 'MM-DD-YYYY')
+        AND TO_DATE(:2, 'MM-DD-YYYY')
+        AND weather_condition IN (:3, :4, :5, :6, :7, :8, :9, :10, :11) 
+        AND {age_filter} AND {sex_filter}
+        GROUP BY EXTRACT(YEAR FROM C.CRASH_DATE)
 	
         ),
     Temp3
     AS (
         --SPEED_LIMIT
-        SELECT EXTRACT(YEAR FROM CRASH_DATE) AS YEAR,
+        SELECT EXTRACT(YEAR FROM C.CRASH_DATE) AS YEAR,
             ROUND(AVG(POSTED_LIMIT)) AS EXCEEDED_SPEED_LIMIT
-        FROM Crashes
+        FROM Crashes C
+		INNER JOIN People p
+		ON p.RD_NO = c.RD_NO
         WHERE PRIM_CONTRIBUTORY_CAUSE IN ('EXCEEDING AUTHORIZED SPEED LIMIT')
-	AND C.CRASH_DATE BETWEEN TO_DATE(:1, 'MM-DD-YYYY')
-                    AND TO_DATE(:2, 'MM-DD-YYYY')
-	AND weather_condition IN (:3, :4, :5, :6, :7, :8, :9, :10, :11) 
- 	AND {age_filter} AND {sex_filter}
-        GROUP BY EXTRACT(YEAR FROM CRASH_DATE)
+		AND C.CRASH_DATE BETWEEN TO_DATE(:1, 'MM-DD-YYYY')
+        AND TO_DATE(:2, 'MM-DD-YYYY')
+        AND weather_condition IN (:3, :4, :5, :6, :7, :8, :9, :10, :11) 
+        AND {age_filter} AND {sex_filter}
+        GROUP BY EXTRACT(YEAR FROM C.CRASH_DATE)
         ),
     Temp4
     AS (
         --NON_FATAL
-        SELECT EXTRACT(YEAR FROM CRASH_DATE) AS YEAR,
+        SELECT EXTRACT(YEAR FROM C.CRASH_DATE) AS YEAR,
             ROUND(AVG(POSTED_LIMIT)) AS NON_FATAL
-        FROM Crashes
+        FROM Crashes C
+		INNER JOIN People p
+		ON p.RD_NO = c.RD_NO
         WHERE INJURIES_FATAL = 0
-	AND C.CRASH_DATE BETWEEN TO_DATE(:1, 'MM-DD-YYYY')
-                    AND TO_DATE(:2, 'MM-DD-YYYY')
-	AND weather_condition IN (:3, :4, :5, :6, :7, :8, :9, :10, :11) 
- 	AND {age_filter} AND {sex_filter}
-        GROUP BY EXTRACT(YEAR FROM CRASH_DATE)
+		AND C.CRASH_DATE BETWEEN TO_DATE(:1, 'MM-DD-YYYY')
+        AND TO_DATE(:2, 'MM-DD-YYYY')
+        AND weather_condition IN (:3, :4, :5, :6, :7, :8, :9, :10, :11) 
+        AND {age_filter} AND {sex_filter}
+        GROUP BY EXTRACT(YEAR FROM C.CRASH_DATE)
         ),
     Temp5
     AS (
         --FATAL
-        SELECT EXTRACT(YEAR FROM CRASH_DATE) AS YEAR,
+        SELECT EXTRACT(YEAR FROM C.CRASH_DATE) AS YEAR,
             ROUND(AVG(POSTED_LIMIT)) AS FATAL
-        FROM Crashes
+        FROM Crashes C
+		INNER JOIN People p
+		ON p.RD_NO = c.RD_NO
         WHERE INJURIES_FATAL <> 0
-	AND C.CRASH_DATE BETWEEN TO_DATE(:1, 'MM-DD-YYYY')
-                    AND TO_DATE(:2, 'MM-DD-YYYY')
-	AND weather_condition IN (:3, :4, :5, :6, :7, :8, :9, :10, :11) 
- 	AND {age_filter} AND {sex_filter}
-        GROUP BY EXTRACT(YEAR FROM CRASH_DATE)
+		AND C.CRASH_DATE BETWEEN TO_DATE(:1, 'MM-DD-YYYY')
+        AND TO_DATE(:2, 'MM-DD-YYYY')
+        AND weather_condition IN (:3, :4, :5, :6, :7, :8, :9, :10, :11) 
+        AND {age_filter} AND {sex_filter}
+        GROUP BY EXTRACT(YEAR FROM C.CRASH_DATE)
         )
     SELECT Temp1.YEAR,
         Temp1.CELL_PHONE,
