@@ -30,5 +30,5 @@ export async function getTupleCount(): Promise<number> {
     const res = await fetch('http://127.0.0.1:8000/oracle_connection/schneider');
     const tupleCount = await res.json();
 
-    return tupleCount.totalCount;
+    return tupleCount[0].totalCount;
 }
