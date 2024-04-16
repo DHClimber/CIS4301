@@ -1,4 +1,5 @@
 "use client"
+import { formatDate } from "@/lib/functions";
 import { FilterProps as FilterControlsProps } from "@/lib/types";
 import { Autocomplete, Box, Button, Card, Chip, Divider, FormControlLabel, FormGroup, Input, Radio, RadioGroup, Slider, Stack, TextField, Typography } from "@mui/material";
 import { useState } from "react";
@@ -18,8 +19,8 @@ const weatherOptions = [
 export default function FilterControls(props: FilterControlsProps) {
     const [startDate, setStartDate] = useState<string>("");
     const [endDate, setEndDate] = useState<string>("");
-    const [sex, setSex] = useState<string>();
-    const [ageRange, setAgeRange] = useState<number[]>([20, 37]);
+    const [sex, setSex] = useState<string>("ALL");
+    const [ageRange, setAgeRange] = useState<number[]>([0, 120]);
     const [weather, setWeather] = useState<string[]>([]);
     const [error, setError] = useState<string>();
 
@@ -27,7 +28,7 @@ export default function FilterControls(props: FilterControlsProps) {
         setAgeRange(newValue as number[]);
     };
 
-    const ageRangeLabels = [{value: 0, label: '0'}, {value: 100, label: '100'}];
+    const ageRangeLabels = [{value: 0, label: '0'}, {value: 120, label: '120'}];
 
     function handleSubmit() {
         if (new Date(startDate) > new Date(endDate)) {
@@ -39,10 +40,10 @@ export default function FilterControls(props: FilterControlsProps) {
         }
         setError("");
         const filters = {
-            ...(startDate && endDate ? {dates: [startDate, endDate]} : {}),
-            ...(sex ? {sex: sex} : {}),
-            ...(ageRange ? {ageRange: ageRange} : {}),
-            ...(weather.length ? {weather: weather} : {}),
+            ...(startDate && endDate ? {dates: [formatDate(startDate), formatDate(endDate)]} : {dates : ["", ""]}),
+            ...(sex ? {sex: sex} : {sex : "ALL"}),
+            ...(ageRange ? {ageRange: ageRange} : {ageRange : [0, 120]}),
+            ...(weather.length ? {weather: weather} : {weather : []}),
         }
         console.log("Sending data: ", filters);
         props.onSubmit(filters);    
@@ -75,9 +76,9 @@ export default function FilterControls(props: FilterControlsProps) {
                             value={sex} 
                             onChange={(e, newVal) => setSex(newVal)}
                         >
-                            <FormControlLabel value="female" control={<Radio />} label="Female" />
-                            <FormControlLabel value="male" control={<Radio />} label="Male" />
-                            <FormControlLabel value="all" control={<Radio />} label="All" />
+                            <FormControlLabel value="F" control={<Radio />} label="Female" />
+                            <FormControlLabel value="M" control={<Radio />} label="Male" />
+                            <FormControlLabel value="ALL" control={<Radio />} label="All" />
                         </RadioGroup>
                     </Box>
                     <Box display={{display: props.ageRange ? 'block' : 'none'}}>
@@ -87,9 +88,10 @@ export default function FilterControls(props: FilterControlsProps) {
                             onChange={handleAgeRangeChange}
                             valueLabelDisplay="auto"
                             marks={ageRangeLabels}
+                            max={120}
                         />
                     </Box>
-                    <Box>
+                    <Box display={{display: props.weather ? 'block' : 'none'}}>
                         <Typography variant='h6'>Weather</Typography>
                         <Autocomplete
                             multiple

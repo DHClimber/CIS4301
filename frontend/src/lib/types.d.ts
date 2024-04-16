@@ -20,6 +20,7 @@ export type FilterProps = {
 }
 
 export type FilterValues = {
+    view?: string;
     datePicker?: number[];
     sexSelect?: string;
     ageRange?: number[];

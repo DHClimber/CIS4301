@@ -7,7 +7,7 @@ import { FilterValues, DashboardTile, BarChartDataFormat } from '@/lib/types';
 import { useEffect, useState } from 'react';
 import { generateHexColorFromLetter, getIdToKeysMap } from '@/lib/functions';
 
-export default async function Dashboard() {
+export default function Dashboard() {
   const [tiles, setTiles] = useState<DashboardTile[]>([]);
   const [tileIdToChartKeys, setTileIdToChartKeys] = useState<{[id: string]: string[]}>();
 
@@ -31,12 +31,12 @@ export default async function Dashboard() {
       <Stack direction={'row'} gap={2}>
         <Grid container spacing={1}>
           {tileIdToChartKeys ? tiles.map((tile) => (
-            <Grid item xs={3}>
+            <Grid item xs={6}>
               <Card sx={{padding: 5}}>
                 <Typography variant='h6'>{tile.title}</Typography>            
                 <ResponsiveContainer width={250} height={150}>
                   <BarChart width={250} height={150} data={tile.data}>
-                    <XAxis dataKey="name" />
+                    <XAxis dataKey="YEAR" angle={-45}/>
                     <YAxis />
                     {tileIdToChartKeys[tile.id].map((key: string) => {
                       const color = generateHexColorFromLetter(key.charCodeAt(0));

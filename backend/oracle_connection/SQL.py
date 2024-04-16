@@ -262,4 +262,4 @@ def Query_5(age_filter, sex_filter):
         AND Temp4.YEAR = Temp5.YEAR
     ORDER BY Temp1.YEAR ASC
     """
-	return [sql, "Comparative Analysis of Avg Speed Limit by Crash Type", "Speed Limit"]
+	return [sql, "Comparative Analysis of Avg Speed Limit by Crash Type", "Speed Limit (mph)"]

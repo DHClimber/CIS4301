@@ -47,11 +47,15 @@ class Dashboard(APIView):
 
     def post(self, request):
     
-        CRASH_DATE_MIN = request.data.get('CRASH_DATE_MIN', "")
-        if CRASH_DATE_MIN == "": CRASH_DATE_MIN = '01-01-2014'  
+        if request.data['dates'][0] != "":
+            CRASH_DATE_MIN = request.data['dates'][0]
+        else:
+            CRASH_DATE_MIN = '01-01-2014'  
 
-        CRASH_DATE_MAX = request.data.get('CRASH_DATE_MAX', "")
-        if CRASH_DATE_MAX == "" : CRASH_DATE_MAX = '12-31-2019' 
+        if request.data['dates'][1] != "":
+            CRASH_DATE_MAX = request.data['dates'][1]
+        else:
+            CRASH_DATE_MAX = '12-31-2019'  
 
         binder = [CRASH_DATE_MIN, CRASH_DATE_MAX, 'FOG/SMOKE/HAZE',
         'SEVERE CROSS WIND GATE', 'SNOW', 'OTHER', 'CLEAR', 'RAIN', 'CLOUDY/OVERCAST',
@@ -215,49 +219,45 @@ class Dashboard_single(APIView):
         except Exception:
             error_track += "KV pair 'sex' missing\n "
         try:
-            request.data['min_age']
+            request.data['ageRange']
         except Exception:
-            error_track += "KV pair 'min_age' missing\n "
-        try:
-            request.data['max_age']
-        except Exception:
-            error_track += "KV pair 'max_age' missing\n "
+            error_track += "KV pair 'ageRange' missing\n "
         try:
             request.data['weather']
         except Exception:
             error_track += "KV pair 'weather' missing\n "
         if error_track != "": return Response({"Error message": f"{error_track}"})
         
-
-
         view = str(request.data['view'])
 
         if view == None:
             return Response({"error": 'please select 1-5 for key "view"'})
 
         sex = request.data['sex']
-        min_age = request.data['min_age']
-        if min_age == "": min_age = 0
-        max_age = request.data['max_age']
-        if max_age == "": max_age = 1000
+        min_age = request.data['ageRange'][0]
+        max_age = request.data['ageRange'][1]
         
         weather=[]
-        if "weather" in request.data.keys() and request.data['weather'] != "":
-            weather.append(request.data['weather'])
+        if len(request.data['weather']) != 0:
+            weather += request.data['weather']
         else:
             weather = ['FOG/SMOKE/HAZE', 'SEVERE CROSS WIND GATE', 
                 'SNOW', 'OTHER', 'CLEAR', 'RAIN', 'CLOUDY/OVERCAST',
                 'UNKNOWN', 'SLEET/HAIL']
             
-        if "CRASH_DATE_MIN" in request.data.keys():
-            CRASH_DATE_MIN = request.data['CRASH_DATE_MIN']
+        if request.data['dates'][0] != "":
+            CRASH_DATE_MIN = request.data['dates'][0]
         else:
             CRASH_DATE_MIN = '01-01-2014'  
 
-        if "CRASH_DATE_MAX" in request.data.keys():
-            CRASH_DATE_MAX = request.data['CRASH_DATE_MAX']
+        if request.data['dates'][1] != "":
+            CRASH_DATE_MAX = request.data['dates'][1]
         else:
             CRASH_DATE_MAX = '12-31-2019' 
+
+        print(CRASH_DATE_MIN)
+        print(CRASH_DATE_MAX)
+
 
         binder = []
 
@@ -266,12 +266,16 @@ class Dashboard_single(APIView):
         binder += weather
         binder += list(None for i in range(9 - len(weather)))
 
-        age_filter = "age BETWEEN (:12) AND (:13)"
+        if min_age == 0 and max_age == 120:
+            age_filter = "(age BETWEEN (:12) AND (:13) OR age IS NULL)"
+        else:
+            age_filter = "age BETWEEN (:12) AND (:13)"
+
 
         binder += [min_age]
         binder += [max_age]
     
-        if str.upper(sex) == "ALL" or str.upper(sex) =="":
+        if str.upper(sex) == "ALL":
             sex_filter = "(sex IN (:14, :15, :16, :17) or sex IS NULL)"
             binder += ['X', 'U', 'M', 'F']
         else:
@@ -303,6 +307,9 @@ class Dashboard_single(APIView):
                 complex_sql = SQL.Query_5(age_filter, sex_filter) #working
             
         sql_response = sql_request(complex_sql[0], binder)
+        print(f"ERRRRR {sql_response}")
+        print(f"Binder {binder}")
+        print(f"Query {complex_sql[0]}")
 
         if int(view) < 5:
             sql_response = wc.parse(sql_response)
@@ -355,6 +362,10 @@ class Dashboard_single(APIView):
         sql_response = sql_request(complex_sql[0], binder)
         if int(view) < 5:
             sql_response = wc.parse(sql_response)
+
+        print(f"Response {sql_response}")
+        print(f"Binder {binder}")
+        print(f"Query {complex_sql[0]}")
 
         queryMap = {
                 "id" : view,
