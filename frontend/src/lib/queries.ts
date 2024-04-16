@@ -15,13 +15,13 @@ export async function getAllDashboardTiles(): Promise<DashboardTile[]> {
  * @returns Dashboard Tile object with specified id
  */
 export async function getDashboardTileById(id: String): Promise<DashboardTile | undefined> {
-    const data = await fetch(`http://127.0.0.1:8000/oracle_connection/dashboard/?tile=${id}`);
+    const data = await fetch(`http://127.0.0.1:8000/oracle_connection/dashboard_single/?view=${id}`);
 
-    return await data.json();
+    return data.json();
 }
 
 export async function getAllFilteredTiles(filters: FilterValues) {
-    return (await fetch("http://127.0.0.1:8000/oracle_connection/tuna/", {
+    return (await fetch("http://127.0.0.1:8000/oracle_connection/dashboard/", {
         method: "POST",
         headers: {
         "Content-Type": "application/json"
@@ -31,7 +31,8 @@ export async function getAllFilteredTiles(filters: FilterValues) {
 }
 
 export async function getFilteredDataForTileById(filters: FilterValues, id: string) {
-    return (await fetch(`http://127.0.0.1:8000/oracle_connection/dashboard/${id}`, {
+    filters["view"] = id;
+    return (await fetch('http://127.0.0.1:8000/oracle_connection/dashboard_single/', {
         method: "POST",
         headers: {
         "Content-Type": "application/json"

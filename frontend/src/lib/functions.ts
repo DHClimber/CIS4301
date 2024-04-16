@@ -1,15 +1,8 @@
 import { BarChartDataFormat, DashboardTile } from "./types";
 
-export function formatDate(date: Date | string) {
-    if (typeof date === "string") {
-        let dateTypeDate = new Date(date);
-        const offset = dateTypeDate.getTimezoneOffset()
-        dateTypeDate = new Date(dateTypeDate.getTime() - (offset*60*1000))
-        return dateTypeDate.toISOString().split('T')[0]
-    }
-    const offset = date.getTimezoneOffset()
-    date = new Date(date.getTime() - (offset*60*1000))
-    return date.toISOString().split('T')[0]
+export function formatDate(date: string) {
+    let dateTypeDate = new Date(date);
+    return dateTypeDate.toLocaleString("en-US", {day: "2-digit", month: "2-digit", year: "numeric"}).replaceAll("/", "-")
 }
 
 export function generateHexColorFromLetter (seed: number) {
@@ -26,7 +19,7 @@ export const getKeysForData = (data: BarChartDataFormat[]) => {
     const keys = new Set<string>();
     data.forEach((d) => {
       Object.keys(d).forEach((key) => {
-        if (key !== "name") {
+        if (key !== "YEAR") {
             keys.add(key);
         }
       });
