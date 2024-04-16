@@ -1,15 +1,12 @@
-import { DashboardTile } from './types'
-import { testTiles } from '@/app/test-data';
+import { FilterValues, DashboardTile } from './types'
 
 /**
  * Returns array of all DashboardTiles
  */
-export async function getAllDashboardTiles(minDate: string, maxDate: string): Promise<DashboardTile[] | null> {
-    
-    const data = await fetch(`http://127.0.0.1:8000/oracle_connection/dashboard/?minDate=${minDate}&maxDate=${maxDate}`);
-    const testTiles = await data.json();
+export async function getAllDashboardTiles(): Promise<DashboardTile[]> {
+    const data = await fetch(`http://127.0.0.1:8000/oracle_connection/dashboard/`);
 
-    return testTiles;
+    return await data.json();
 }
 
 /**
@@ -17,28 +14,28 @@ export async function getAllDashboardTiles(minDate: string, maxDate: string): Pr
  * @param id of DashboardTile to fetch
  * @returns Dashboard Tile object with specified id
  */
-export async function getDashboardTileById(id: string): Promise<DashboardTile | undefined> {
-    
+export async function getDashboardTileById(id: String): Promise<DashboardTile | undefined> {
     const data = await fetch(`http://127.0.0.1:8000/oracle_connection/dashboard/?tile=${id}`);
-    const testTile = await data.json();
 
-    return testTile;
+    return await data.json();
 }
 
+export async function getAllFilteredTiles(filters: FilterValues) {
+    return (await fetch("http://127.0.0.1:8000/oracle_connection/tuna/", {
+        method: "POST",
+        headers: {
+        "Content-Type": "application/json"
+        },
+        body: JSON.stringify(filters)
+    })).json();
+}
 
-
-//---- in django
-// const queryMap = {
-//     [id: string]: string;
-// }
-
-// {"1": "Select * from Crashes", "2": "Select * from People"}
-
-// let query = queryMap[req.query.tile];
-
-// let minDate = '1-2-2024'; // constraint
-
-// query = query + ` where Crash_date > ${minDate}`;
-
-// // call oracle sql qith "query" variable
-
+export async function getFilteredDataForTileById(filters: FilterValues, id: string) {
+    return (await fetch(`http://127.0.0.1:8000/oracle_connection/dashboard/${id}`, {
+        method: "POST",
+        headers: {
+        "Content-Type": "application/json"
+        },
+        body: JSON.stringify(filters)
+    })).json();
+}
