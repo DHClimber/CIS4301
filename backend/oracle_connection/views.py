@@ -1,5 +1,4 @@
 
-from django.http import HttpResponseNotFound
 from rest_framework.response import Response
 from rest_framework import status
 from oracle_connection.serializers import ConnectionSerializer
