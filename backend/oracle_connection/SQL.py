@@ -48,7 +48,7 @@ def Query_2(age_filter, sex_filter):
             c.PRIM_CONTRIBUTORY_CAUSE,
             COUNT(DISTINCT(c.RD_NO)) AS Total_Crashes,
             DENSE_RANK() OVER (
-                PARTITION BY TO_CHAR(c.CRASH_DATE, 'YYYY') ORDER BY COUNT(*) DESC
+                PARTITION BY TO_CHAR(c.CRASH_DATE, 'YYYY') ORDER BY COUNT(DISTINCT(c.RD_NO)) DESC
                 ) AS Rank
         FROM Crashes c
         INNER JOIN people p
