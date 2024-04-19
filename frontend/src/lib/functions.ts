@@ -2,6 +2,8 @@ import { BarChartDataFormat, DashboardTile } from "./types";
 
 export function formatDate(date: string) {
     let dateTypeDate = new Date(date);
+    dateTypeDate.setDate(dateTypeDate.getDate() + 1);
+  
     return dateTypeDate.toLocaleString("en-US", {day: "2-digit", month: "2-digit", year: "numeric"}).replaceAll("/", "-")
 }
 
