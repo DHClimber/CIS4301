@@ -67,16 +67,36 @@ class Dashboard(APIView):
         binder_special5 = binder + binder + binder + binder + binder
         
         complex_sql1 = SQL.Query_1(self.age_filter, self.sex_filter) #working
-        sql_response1 = wc.parse(sql_request(complex_sql1[0], binder))
+    
+        query1_values = sql_request(complex_sql1[0], binder)
+        if query1_values:
+            sql_response1 = wc.parse(query1_values)
+        else:
+            sql_response1 = {}
                
         complex_sql2 = SQL.Query_2(self.age_filter, self.sex_filter) #working
-        sql_response2 = wc.parse(sql_request(complex_sql2[0], binder))
+
+        query2_values = sql_request(complex_sql2[0], binder)
+        if query2_values:
+            sql_response2 = wc.parse(query2_values)
+        else:
+            sql_response2 = {}
        
         complex_sql3 = SQL.Query_3(self.age_filter, self.sex_filter) #working
-        sql_response3 = wc.parse(sql_request(complex_sql3[0], binder_special3))
+
+        query3_values = sql_request(complex_sql3[0], binder_special3)
+        if query3_values:
+            sql_response3 = wc.parse(query3_values)
+        else:
+            sql_response3 = {}
        
         complex_sql4 = SQL.Query_4(self.age_filter, self.sex_filter) #working
-        sql_response4 = wc.parse(sql_request(complex_sql4[0], binder))
+
+        query4_values = sql_request(complex_sql4[0], binder)
+        if query4_values:
+            sql_response4 = wc.parse(query4_values)
+        else:
+            sql_response4 = {}
             
         complex_sql5 = SQL.Query_5(self.age_filter, self.sex_filter) #working
         sql_response5 = sql_request(complex_sql5[0], binder_special5)
@@ -310,7 +330,7 @@ class Dashboard_single(APIView):
         print(f"Binder {binder}")
         print(f"Query {complex_sql[0]}")
 
-        if int(view) < 5:
+        if int(view) < 5 and sql_response:
             sql_response = wc.parse(sql_response)
                
         queryMap = {
